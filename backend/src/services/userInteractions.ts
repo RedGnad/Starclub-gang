@@ -97,8 +97,8 @@ export class UserInteractionsService {
     try {
       console.log(`🔍 Vérification des interactions pour ${userAddress}...`);
 
-      // Utiliser la vraie vérification blockchain via BlockVision
-      const result = await this.getRealBlockchainInteractions(userAddress, dappId);
+      // Utiliser la vraie vérification blockchain via RPC direct (qui fonctionne!)
+      const result = await this.getMonadExplorerInteractions(userAddress, dappId);
       
       const duration = Date.now() - startTime;
       console.log(`✅ Vérification terminée en ${duration}ms`);
@@ -218,10 +218,15 @@ export class UserInteractionsService {
 
     } catch (error) {
       console.error('❌ REAL BLOCKCHAIN: BlockVision API failed:', error);
-      console.log('🔄 FALLBACK: Using development simulation mode...');
+      console.log('🔄 FALLBACK: Returning empty result (no more simulations)');
       
-      // FALLBACK MODE pour développement quand BlockVision n'est pas dispo
-      return this.getFallbackInteractions(userAddress, SUPER_DAPPS);
+      // Retourner un résultat vide - plus de simulations
+      return {
+        userAddress,
+        totalDappsInteracted: 0,
+        interactions: [],
+        checkDuration: 0
+      };
     }
   }
 
@@ -301,8 +306,8 @@ export class UserInteractionsService {
               name: superDApp.contracts.find(c => c.address.toLowerCase() === toAddress)?.name || 'Contract',
               interactionCount: 1
             }],
-            // Ajouter le lien vers l'explorer pour cette transaction
-            explorerLink: `https://testnet.monadscan.com/tx/${tx.hash}`,
+            // Ajouter le lien vers l'explorer MonVision pour cette transaction
+            explorerLink: `https://testnet.monvision.io/tx/${tx.hash}`,
             transactionHash: tx.hash
           });
         }
@@ -338,23 +343,9 @@ export class UserInteractionsService {
     try {
       console.log('🔍 Fetching REAL recent transactions via Monad RPC...');
       
-      // TEST DIRECT: Vérifier si on peut récupérer la transaction connue
-      const directTest = await this.testDirectTransactionLookup(userAddress, rpcUrl);
-      if (directTest.length > 0) {
-        console.log(`✅ Found transaction via direct lookup!`);
-        return directTest;
-      }
-      
-      // Approche 1: eth_getLogs pour les interactions avec nos contrats (OPTIMAL)
-      const logInteractions = await this.getContractInteractionsViaLogs(userAddress, rpcUrl);
-      if (logInteractions.length > 0) {
-        console.log(`✅ Found ${logInteractions.length} contract interactions via logs`);
-        return logInteractions;
-      }
-      
-      // Approche 2: Scan des derniers blocs (FALLBACK limité à 20 minutes)
-      console.log('📊 No logs found, scanning recent blocks...');
-      return await this.scanRecentBlocks(userAddress, rpcUrl);
+      // MÉTHODE SIMPLE: Scanner les 50 derniers blocs SEULEMENT (≈ 1 minute)
+      console.log('🎯 SIMPLE: Scanning last 50 blocks only (1 min window)');
+      return await this.scanLast50BlocksSimple(userAddress, rpcUrl);
       
     } catch (error) {
       console.error('❌ Error fetching Monad transactions:', error);
@@ -363,79 +354,369 @@ export class UserInteractionsService {
   }
   
   /**
-   * TEST DIRECT: Vérifier une transaction spécifique connue pour diagnostiquer
+   * MÉTHODE ULTRA-SIMPLE: 50 blocs seulement (≈ 1 minute)
+   * Optimisée pour les transactions très récentes
    */
-  private async testDirectTransactionLookup(userAddress: string, rpcUrl: string): Promise<any[]> {
+  private async scanLast50BlocksSimple(userAddress: string, rpcUrl: string): Promise<any[]> {
     try {
-      // Transaction connue à tester
-      const knownTxHash = '0x28196cb9da774157243d2eb6445175b9d47a010b3aa381737e15e90f1c6adfac';
+      console.log('⚡ ULTRA-SIMPLE: Scanning only last 50 blocks');
       
-      console.log(`🧪 Testing direct lookup of known tx: ${knownTxHash}`);
-      
-      const response = await fetch(rpcUrl, {
+      // Get latest block
+      const latestResp = await fetch(rpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           jsonrpc: '2.0',
-          method: 'eth_getTransactionByHash',
-          params: [knownTxHash],
+          method: 'eth_blockNumber',
+          params: [],
           id: 1
         })
       });
       
+      if (!latestResp.ok) return [];
+      const latestData = await latestResp.json() as any;
+      const latestBlock = parseInt(latestData.result, 16);
+      
+      const startBlock = Math.max(0, latestBlock - 500); // 500 blocs (≈ 8-10 min)
+      console.log(`⚡ Scanning blocks ${startBlock} to ${latestBlock} (500 blocks = ~8-10min)`);
+      
+      // SuperDApp contracts
+      const contracts = SUPER_DAPPS.flatMap(dapp => 
+        dapp.contracts.map(c => c.address.toLowerCase())
+      );
+      
+      const found: any[] = [];
+      
+      // Scan avec chunks de 10 blocs (plus rapide)
+      for (let i = latestBlock; i >= startBlock; i -= 10) {
+        const chunkStart = Math.max(startBlock, i - 9);
+        const chunkEnd = i;
+        
+        console.log(`⚡ Chunk: ${chunkStart}-${chunkEnd}`);
+        
+        // Parallel fetch des blocs
+        const promises = [];
+        for (let blockNum = chunkStart; blockNum <= chunkEnd; blockNum++) {
+          promises.push(
+            fetch(rpcUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'eth_getBlockByNumber',
+                params: ['0x' + blockNum.toString(16), true],
+                id: blockNum
+              })
+            }).then(res => res.ok ? res.json() : null)
+          );
+        }
+        
+        const results = await Promise.all(promises);
+        
+        // Check transactions
+        for (const result of results) {
+          if (!result || !(result as any).result?.transactions) continue;
+          
+          const block = (result as any).result;
+          for (const tx of block.transactions) {
+            if (tx.from?.toLowerCase() === userAddress.toLowerCase()) {
+              const target = tx.to?.toLowerCase();
+              if (target && contracts.includes(target)) {
+                console.log(`🎉 FOUND: ${tx.hash} -> ${tx.to}`);
+                found.push({
+                  ...tx,
+                  timeStamp: parseInt(block.timestamp, 16),
+                  blockNumber: parseInt(block.number, 16)
+                });
+              }
+            }
+          }
+        }
+        
+        // Stop si on a trouvé quelque chose
+        if (found.length > 0) {
+          console.log(`✅ Found ${found.length} transactions, stopping`);
+          break;
+        }
+      }
+      
+      return found;
+      
+    } catch (error) {
+      console.error('❌ Ultra-simple scan error:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * MÉTHODE BASIQUE: MonadScan API (comme Etherscan)
+   * La plus simple et efficace pour récupérer les transactions d'une adresse
+   */
+  private async getTransactionsFromMonadScan(userAddress: string): Promise<any[]> {
+    try {
+      console.log('🌐 Fetching transactions from MonadScan API for:', userAddress);
+      
+      // URL MonadScan API (Etherscan-like)
+      const apiUrl = `https://testnet.monadscan.com/api?module=account&action=txlist&address=${userAddress}&startblock=0&endblock=99999999&page=1&offset=50&sort=desc`;
+      
+      console.log('📡 MonadScan URL:', apiUrl);
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; StarClub/1.0)',
+        }
+      });
+      
       if (!response.ok) {
-        console.log('❌ Direct lookup failed - RPC error');
+        console.log(`❌ MonadScan API failed: ${response.status}`);
         return [];
       }
       
       const data = await response.json() as any;
-      const transaction = data.result;
+      console.log('📊 MonadScan response status:', data.status);
       
-      if (!transaction) {
-        console.log('❌ Direct lookup - transaction not found on RPC');
+      if (data.status !== '1' || !data.result) {
+        console.log('❌ MonadScan: No transactions or bad status');
         return [];
       }
       
-      console.log(`✅ Direct lookup found transaction:`, {
-        hash: transaction.hash,
-        from: transaction.from,
-        to: transaction.to,
-        blockNumber: transaction.blockNumber
+      const transactions = data.result;
+      console.log(`📄 Found ${transactions.length} transactions from MonadScan`);
+      
+      // Filtrer pour les contrats SuperDApp
+      const contractAddresses = SUPER_DAPPS.flatMap(dapp => 
+        dapp.contracts.map(c => c.address.toLowerCase())
+      );
+      
+      console.log('🎯 Filtering for SuperDApp contracts:', contractAddresses);
+      
+      const superDappTx = transactions.filter((tx: any) => {
+        const toAddress = tx.to?.toLowerCase();
+        return toAddress && contractAddresses.includes(toAddress);
       });
       
-      // Vérifier si c'est bien notre utilisateur
-      if (transaction.from.toLowerCase() === userAddress.toLowerCase()) {
-        // Récupérer le block pour avoir le timestamp
-        const blockResponse = await fetch(rpcUrl, {
+      console.log(`✅ Found ${superDappTx.length} SuperDApp transactions!`);
+      
+      // Afficher les détails
+      superDappTx.forEach((tx: any) => {
+        console.log(`🎉 SuperDApp TX: ${tx.hash} -> ${tx.to} (${Math.floor((Date.now() / 1000) - parseInt(tx.timeStamp))} seconds ago)`);
+      });
+      
+      return superDappTx;
+      
+    } catch (error) {
+      console.error('❌ MonadScan API error:', error);
+      return [];
+    }
+  }
+  
+  
+  /**
+   * MÉTHODE ULTRA-SIMPLE: Scanner les 100 derniers blocs seulement (≈ 2 minutes)
+   * Performance maximum, pas de timeouts
+   */
+  private async scanLast100BlocksOnly(userAddress: string, rpcUrl: string): Promise<any[]> {
+    try {
+      console.log('🚀 SIMPLE scan: Only last 100 blocks (fast)');
+      
+      // Récupérer le bloc actuel  
+      const latestResp = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_blockNumber',
+          params: [],
+          id: 1
+        })
+      });
+      
+      if (!latestResp.ok) return [];
+      const latestData = await latestResp.json() as any;
+      const latestBlock = parseInt(latestData.result, 16);
+      
+      const startBlock = Math.max(0, latestBlock - 100); // Seulement 100 blocs
+      console.log(`🎯 Scanning ONLY blocks ${startBlock} to ${latestBlock} (100 blocks max)`);
+      
+      // Adresses des contrats SuperDApps
+      const contracts = SUPER_DAPPS.flatMap(dapp => 
+        dapp.contracts.map(c => c.address.toLowerCase())
+      );
+      console.log(`🎯 Looking for:`, contracts);
+      
+      const foundTx: any[] = [];
+      
+      // Scan bloc par bloc (simple et fiable)
+      for (let blockNum = latestBlock; blockNum >= startBlock; blockNum--) {
+        console.log(`🔍 Block ${blockNum}...`);
+        
+        const blockResp = await fetch(rpcUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             jsonrpc: '2.0',
             method: 'eth_getBlockByNumber',
-            params: [transaction.blockNumber, false],
-            id: 2
+            params: ['0x' + blockNum.toString(16), true],
+            id: blockNum
           })
         });
         
-        if (blockResponse.ok) {
-          const blockData = await blockResponse.json() as any;
-          const block = blockData.result;
-          
-          console.log(`✅ Found matching transaction from user!`);
-          return [{
-            ...transaction,
-            timeStamp: parseInt(block.timestamp, 16),
-            blockNumber: transaction.blockNumber
-          }];
+        if (!blockResp.ok) continue;
+        const blockData = await blockResp.json() as any;
+        const block = blockData.result;
+        
+        if (!block?.transactions) continue;
+        
+        // Chercher nos transactions
+        for (const tx of block.transactions) {
+          if (tx.from?.toLowerCase() === userAddress.toLowerCase()) {
+            const targetContract = tx.to?.toLowerCase();
+            if (targetContract && contracts.includes(targetContract)) {
+              console.log(`🎉 FOUND! ${tx.hash} -> ${tx.to}`);
+              foundTx.push({
+                ...tx,
+                timeStamp: parseInt(block.timestamp, 16),
+                blockNumber: blockNum
+              });
+            }
+          }
         }
-      } else {
-        console.log(`❌ Transaction from different user: ${transaction.from} vs ${userAddress}`);
+        
+        // Stop si on a trouvé quelque chose
+        if (foundTx.length > 0) {
+          console.log(`✅ Found ${foundTx.length} transactions, stopping`);
+          break;
+        }
       }
       
-      return [];
+      return foundTx;
       
     } catch (error) {
-      console.error('❌ Error in direct transaction lookup:', error);
+      console.error('❌ Simple scan error:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * MÉTHODE DIRECTE: Scanner les transactions récentes de l'utilisateur dans les derniers blocs
+   * Plus fiable que eth_getLogs sur Monad
+   */
+  private async scanUserTransactionsDirectly(userAddress: string, rpcUrl: string): Promise<any[]> {
+    try {
+      console.log('🔍 Direct scan: Getting recent blocks with user transactions...');
+      
+      // Récupérer le bloc actuel  
+      const latestBlockResponse = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_blockNumber',
+          params: [],
+          id: 1
+        })
+      });
+      
+      if (!latestBlockResponse.ok) {
+        console.log('❌ Failed to get latest block');
+        return [];
+      }
+      
+      const latestBlockData = await latestBlockResponse.json() as any;
+      const latestBlockNumber = parseInt(latestBlockData.result, 16);
+      
+      // Limiter aux 2 dernières heures (≈ 7200 blocs sur Monad)
+      const blocksToScan = 2 * 60 * 60; // 2 heures en blocs
+      const startBlock = Math.max(0, latestBlockNumber - blocksToScan);
+      
+      console.log(`🔍 Scanning blocks ${startBlock} to ${latestBlockNumber} (${latestBlockNumber - startBlock} blocks)`);
+      console.log(`🎯 Looking for transactions from ${userAddress} to SuperDApp contracts`);
+      
+      // Adresses des contrats SuperDApps
+      const contractAddresses = SUPER_DAPPS.flatMap(dapp => 
+        dapp.contracts.map(c => c.address.toLowerCase())
+      );
+      console.log(`🎯 SuperDApp contracts:`, contractAddresses);
+      
+      const userTransactions: any[] = [];
+      const twoHoursAgo = Math.floor(Date.now() / 1000) - (2 * 60 * 60);
+      
+      // Scanner les blocs par chunks plus petits
+      const chunkSize = 20; // Plus petit pour éviter les timeouts
+      let foundCount = 0;
+      
+      for (let i = latestBlockNumber; i >= startBlock && foundCount < 10; i -= chunkSize) {
+        const chunkStart = Math.max(startBlock, i - chunkSize + 1);
+        const chunkEnd = i;
+        
+        console.log(`🔍 Scanning chunk: blocks ${chunkStart} to ${chunkEnd}`);
+        
+        // Récupérer les blocs du chunk avec transactions complètes
+        const blockPromises = [];
+        for (let blockNum = chunkStart; blockNum <= chunkEnd; blockNum++) {
+          blockPromises.push(
+            fetch(rpcUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'eth_getBlockByNumber',
+                params: ['0x' + blockNum.toString(16), true], // true = inclure transactions
+                id: blockNum
+              })
+            }).then(res => res.ok ? res.json() : null)
+          );
+        }
+        
+        const blocks = await Promise.all(blockPromises);
+        
+        // Analyser les transactions
+        for (const blockData of blocks) {
+          if (!blockData || !(blockData as any).result?.transactions) continue;
+          
+          const block = (blockData as any).result;
+          const blockTimestamp = parseInt(block.timestamp, 16);
+          
+          // Vérifier si le bloc est dans notre fenêtre temporelle
+          if (blockTimestamp < twoHoursAgo) continue;
+          
+          for (const tx of block.transactions) {
+            // Vérifier si c'est une transaction de notre utilisateur
+            if (tx.from?.toLowerCase() !== userAddress.toLowerCase()) continue;
+            
+            // Vérifier si c'est vers un contrat SuperDApp
+            const targetContract = tx.to?.toLowerCase();
+            if (!targetContract || !contractAddresses.includes(targetContract)) continue;
+            
+            console.log(`✅ Found SuperDApp transaction: ${tx.hash} -> ${tx.to}`);
+            
+            userTransactions.push({
+              ...tx,
+              timeStamp: blockTimestamp,
+              blockNumber: parseInt(block.number, 16)
+            });
+            
+            foundCount++;
+            
+            // Stop si on a trouvé assez de transactions
+            if (foundCount >= 10) break;
+          }
+          
+          if (foundCount >= 10) break;
+        }
+        
+        // Early exit si on a trouvé des transactions
+        if (userTransactions.length > 0) {
+          console.log(`🎉 Found ${userTransactions.length} recent SuperDApp transactions, stopping scan`);
+          break;
+        }
+      }
+      
+      console.log(`📊 Direct scan complete: ${userTransactions.length} transactions found`);
+      return userTransactions;
+      
+    } catch (error) {
+      console.error('❌ Error in direct transaction scan:', error);
       return [];
     }
   }
@@ -464,13 +745,14 @@ export class UserInteractionsService {
       const latestBlockData = await latestBlockResponse.json() as any;
       const latestBlockNumber = parseInt(latestBlockData.result, 16);
       
-      // Limiter aux 20 dernières minutes (≈ 1200 blocs sur Monad)
-      const twentyMinutesAgo = 20 * 60; // 20 minutes en secondes  
-      const blocksFor20Min = twentyMinutesAgo; // ~1 bloc/seconde sur Monad
-      const fromBlock = Math.max(0, latestBlockNumber - blocksFor20Min);
+      // Limiter aux 2 dernières heures pour dev (≈ 7200 blocs sur Monad)
+      const twoHoursAgo = 2 * 60 * 60; // 2 heures en secondes  
+      const blocksFor2Hours = twoHoursAgo; // ~1 bloc/seconde sur Monad
+      const fromBlock = Math.max(0, latestBlockNumber - blocksFor2Hours);
       
-      console.log(`📊 Checking logs from block ${fromBlock} to ${latestBlockNumber} (last 20min)`);
-      console.log(`🎯 Target block #50335435 should be in this range`);
+      console.log(`📊 Checking logs from block ${fromBlock} to ${latestBlockNumber} (last 2h)`);
+      console.log(`🎯 Block range: ${latestBlockNumber - fromBlock} blocks to scan`);
+      console.log(`🎯 Target block #50335435 should be in range: ${fromBlock <= 50335435 && 50335435 <= latestBlockNumber}`);
       
       // Récupérer les adresses des contrats SuperDApps
       const contractAddresses = SUPER_DAPPS.flatMap(dapp => dapp.contracts.map(c => c.address));
@@ -579,15 +861,15 @@ export class UserInteractionsService {
       const latestBlockData = await latestBlockResponse.json() as any;
       const latestBlockNumber = parseInt(latestBlockData.result, 16);
       
-      // Limiter à 20 minutes (1200 blocs max)  
-      const blocksFor20Min = 20 * 60;
-      const startBlock = Math.max(0, latestBlockNumber - blocksFor20Min);
+      // Limiter à 2 heures (7200 blocs max)  
+      const blocksFor2Hours = 2 * 60 * 60;
+      const startBlock = Math.max(0, latestBlockNumber - blocksFor2Hours);
       
       console.log(`🔍 Scanning blocks ${startBlock} to ${latestBlockNumber} (${latestBlockNumber - startBlock} blocks)`);
       console.log(`🎯 Looking for block #50335435 in this range`);
       
       const userTransactions: any[] = [];
-      const twentyMinutesAgo = Math.floor(Date.now() / 1000) - (20 * 60);
+      const twoHoursAgo = Math.floor(Date.now() / 1000) - (2 * 60 * 60);
       
       // Scanner par petits chunks pour performance
       const chunkSize = 50;
@@ -610,7 +892,7 @@ export class UserInteractionsService {
           for (const tx of block.transactions) {
             if (tx.from.toLowerCase() === userAddress.toLowerCase()) {
               const txTimestamp = parseInt(block.timestamp, 16);
-              if (txTimestamp >= twentyMinutesAgo) {
+              if (txTimestamp >= twoHoursAgo) {
                 userTransactions.push({
                   ...tx,
                   timeStamp: txTimestamp,
@@ -661,71 +943,6 @@ export class UserInteractionsService {
       console.warn(`Failed to get block ${blockNumber}:`, error);
       return null;
     }
-  }
-
-  /**
-   * Fallback intelligent pour développement (quand BlockVision indisponible)
-   */
-  private getFallbackInteractions(
-    userAddress: string,
-    targetSuperDApps: any[]
-  ): UserInteractionResult {
-    console.log('🧠 FALLBACK MODE: Simulating recent interactions...');
-    
-    // Simulation intelligente basée sur l'adresse
-    const addressHash = userAddress.toLowerCase();
-    const interactions: DAppInteractionCheck[] = [];
-    
-    // Si l'adresse finit par certains patterns, simuler des interactions
-    const lastDigits = addressHash.slice(-4);
-    
-    // Simulation déterministe basée sur l'adresse (plus réaliste)
-    const addressNumber = parseInt(addressHash.slice(-8), 16); // Prendre les 8 derniers caractères
-    
-    // Simulation spéciale pour ton adresse (qui a vraiment interagi)
-    if (addressHash === '0xd20cc1610bb0d0cf0daacb159ab6cc4787d9e6d4') {
-      console.log('🎯 KNOWN ADDRESS: Real interaction detected (Atlantis, 4 minutes ago)');
-      
-      interactions.push({
-        dappId: 'atlantis',
-        dappName: 'Atlantis',
-        hasInteracted: true,
-        lastInteraction: new Date(Date.now() - 4 * 60 * 1000), // Il y a 4 minutes (proche de ta vraie TX)
-        transactionCount: 1,
-        contractAddresses: ['0x0000000000001fF3684f28c67538d4D072C22734'],
-        contractsUsed: [{
-          address: '0x0000000000001fF3684f28c67538d4D072C22734',
-          name: 'AtlantisSwapRouter',
-          interactionCount: 1
-        }]
-      });
-    } 
-    // Autres simulations basées sur le hash de l'adresse
-    else if (parseInt(lastDigits, 16) % 3 === 0) {
-      // 1/3 des adresses ont interagi avec Kuru
-      interactions.push({
-        dappId: 'kuru',
-        dappName: 'Kuru',
-        hasInteracted: true,
-        lastInteraction: new Date(Date.now() - 2 * 60 * 60 * 1000), // Il y a 2h
-        transactionCount: Math.floor(Math.random() * 3) + 1,
-        contractAddresses: ['0xc816865f172d640d93712C68a7E1F83F3fA63235'],
-        contractsUsed: [{
-          address: '0xc816865f172d640d93712C68a7E1F83F3fA63235',
-          name: 'Router',
-          interactionCount: 1
-        }]
-      });
-    }
-    
-    console.log(`🧠 FALLBACK: Generated ${interactions.length} simulated interactions`);
-    
-    return {
-      userAddress,
-      totalDappsInteracted: interactions.length,
-      interactions,
-      checkDuration: 0
-    };
   }
 
   /**

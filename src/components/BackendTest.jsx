@@ -112,7 +112,7 @@ export function BackendTest() {
         <div style={{ marginBottom: '10px' }}>
           <strong>🔗 Interactions (24h):</strong>
           {interactionsLoading ? (
-            <span style={{ color: 'yellow' }}> Checking blockchain...</span>
+            <span style={{ color: 'yellow' }}> 🔄 Scanning blockchain (can take 2-10s)...</span>
           ) : interactions ? (
             <div>
               <div style={{ 
@@ -151,7 +151,7 @@ export function BackendTest() {
               )}
               
               <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>
-                Check: {interactions.checkDuration}ms | Via BlockVision API
+                Check: {interactions.checkDuration}ms | Via Direct RPC
               </div>
               
               {/* SuperDApps disponibles */}
