@@ -140,8 +140,8 @@ export class UserInteractionsService {
       let targetSuperDApps: any[] = [];
       
       if (dappId) {
-        const superDApp = SUPER_DAPPS.find(sd => sd.id === dappId);
-        if (superDApp) {
+        const superDApp = SUPER_DAPPS.find(sd => sd.id === dappId) as any;
+        if (superDApp?.contracts) {
           contractsToCheck = superDApp.contracts.map((c: any) => c.address);
           targetSuperDApps = [superDApp];
         }
@@ -176,24 +176,26 @@ export class UserInteractionsService {
       for (const contractAddress of result.contractsInteracted) {
         const superDApp = findSuperDAppByContract(contractAddress);
         
-        if (superDApp && !processedDApps.has(superDApp.id)) {
-          processedDApps.add(superDApp.id);
+        if (superDApp?.contracts && !processedDApps.has((superDApp as any).id)) {
+          // Cast pour éviter les erreurs TypeScript dans ce bloc
+          const dapp = superDApp as any;
+          processedDApps.add(dapp.id);
           
           // Compter les contrats de cette dApp qui ont eu des interactions
-          const dappContractAddresses = superDApp.contracts.map((c: any) => c.address.toLowerCase());
+          const dappContractAddresses = dapp.contracts.map((c: any) => c.address.toLowerCase());
           const interactedContracts = result.contractsInteracted.filter(addr => 
             dappContractAddresses.includes(addr.toLowerCase())
           );
 
           interactions.push({
-            dappId: superDApp.id,
-            dappName: superDApp.name,
+            dappId: dapp.id,
+            dappName: dapp.name,
             hasInteracted: true,
             lastInteraction: result.lastActivityDate || new Date(),
             transactionCount: result.transactionCount,
             contractAddresses: interactedContracts,
             contractsUsed: interactedContracts.map(addr => {
-              const contract = superDApp.contracts.find((c: any) => 
+              const contract = dapp.contracts?.find((c: any) => 
                 c.address.toLowerCase() === addr.toLowerCase()
               );
               return {
@@ -377,8 +379,8 @@ export class UserInteractionsService {
       const latestData = await latestResp.json() as any;
       const latestBlock = parseInt(latestData.result, 16);
       
-      const startBlock = Math.max(0, latestBlock - 500); // 500 blocs (≈ 8-10 min)
-      console.log(`⚡ Scanning blocks ${startBlock} to ${latestBlock} (500 blocks = ~8-10min)`);
+      const startBlock = Math.max(0, latestBlock - 2000); // 2000 blocs (≈ 30-40 min) DEV MODE
+      console.log(`⚡ Scanning blocks ${startBlock} to ${latestBlock} (2000 blocks = ~30-40min DEV)`);
       
       // SuperDApp contracts
       const contracts = SUPER_DAPPS.flatMap(dapp => 

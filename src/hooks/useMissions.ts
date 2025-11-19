@@ -76,10 +76,41 @@ export function useMissions() {
     setMissionsState(updatedState);
   }, [missionsState.currentDate]);
 
-  // Tracking des positions (à implémenter plus tard)
+  // Tracking des positions - Event Sphere Verif
   const trackPosition = useCallback((objectName: string, position: { x: number; y: number; z: number }) => {
-    // À implémenter quand les objets seront placés dans Spline
     console.log(`🎯 Position tracking: ${objectName} at`, position);
+    
+    // Détection de l'événement Sphere Verif
+    if (objectName.toLowerCase().includes('sphere') && objectName.toLowerCase().includes('verif')) {
+      if (position.y <= -2900 && position.y >= -3100) {
+        console.log('🎯 MISSION EVENT DETECTED: Sphere Verif at y=-3000!');
+        // Trigger mission event
+        return true;
+      }
+    }
+    
+    return false;
+  }, []);
+
+  // Nouveau: déclenchement de mission cube
+  const [missionTriggered, setMissionTriggered] = useState(false);
+  const [activeMission, setActiveMission] = useState<any>(null);
+
+  const triggerCubeMission = useCallback((superDapps: any[]) => {
+    if (superDapps.length === 0) return;
+    
+    // Choisir une SuperDApp au hasard
+    const randomDapp = superDapps[Math.floor(Math.random() * superDapps.length)];
+    
+    console.log('🎯 CUBE MISSION TRIGGERED:', randomDapp.name);
+    
+    setActiveMission(randomDapp);
+    setMissionTriggered(true);
+  }, []);
+
+  const resetMission = useCallback(() => {
+    setMissionTriggered(false);
+    setActiveMission(null);
   }, []);
 
   // Obtenir le statut global des missions
@@ -98,6 +129,12 @@ export function useMissions() {
     trackKeyCombo,
     trackPosition,
     getMissionStatus,
+    
+    // Cube Mission
+    missionTriggered,
+    activeMission,
+    triggerCubeMission,
+    resetMission,
     
     // Helpers
     refresh: () => setMissionsState(MissionStorage.load()),

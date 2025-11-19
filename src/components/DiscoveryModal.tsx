@@ -84,7 +84,7 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
               🔍 Découverte de dApps
             </h2>
             <p className="text-gray-400 text-sm">
-              📊 Données RÉELLES depuis backend + scraper Twitter Puppeteer
+              📊 Données depuis GitHub + Google Sheets
             </p>
           </div>
           <div className="flex gap-3 items-center">
@@ -92,7 +92,7 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
             {backgroundLoading && (
               <div className="flex items-center gap-2 text-blue-400 text-sm">
                 <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                Scraping followers réels...
+                Chargement des dApps...
               </div>
             )}
             
@@ -101,12 +101,12 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
               onClick={handleRefresh}
               disabled={backgroundLoading}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-              title="Actualiser avec scraper Twitter réel"
+              title="Récupérer les nouvelles dApps depuis GitHub"
             >
               <span className={backgroundLoading ? "animate-spin" : ""}>
                 🔄
               </span>
-              {backgroundLoading ? "Scraping..." : "Refresh Backend"}
+              {backgroundLoading ? "Chargement..." : "Actualiser"}
             </button>
 
             <button
@@ -152,7 +152,19 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {(dapps || []).map((dapp: any, index: number) => {
+              {(dapps || [])
+                .sort((a: any, b: any) => {
+                  // SuperDApps en premier
+                  const aIsSuper = superDapps?.some((sd: any) => 
+                    sd?.name?.toLowerCase() === a?.name?.toLowerCase()) || false;
+                  const bIsSuper = superDapps?.some((sd: any) => 
+                    sd?.name?.toLowerCase() === b?.name?.toLowerCase()) || false;
+                  
+                  if (aIsSuper && !bIsSuper) return -1;
+                  if (!aIsSuper && bIsSuper) return 1;
+                  return 0; // Garde l'ordre original pour le reste
+                })
+                .map((dapp: any, index: number) => {
                 // Check SuperDApp avec vérifications de sécurité
                 const isSuper = superDapps?.some((sd: any) => 
                   sd?.name?.toLowerCase() === dapp?.name?.toLowerCase()
@@ -161,26 +173,11 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
                 return (
                   <div 
                     key={dapp?.id || `dapp-${index}`}
-                    style={{
-                      border: isSuper ? '2px solid #ffd700' : 'transparent',
-                      borderRadius: '8px',
-                      position: 'relative'
-                    }}
+                    className={`relative ${isSuper ? 'super-dapp-container' : ''}`}
                   >
                     {/* SuperDApp Badge */}
                     {isSuper && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '8px',
-                        right: '8px',
-                        backgroundColor: '#ffd700',
-                        color: '#000',
-                        fontSize: '11px',
-                        fontWeight: 'bold',
-                        padding: '3px 6px',
-                        borderRadius: '4px',
-                        zIndex: 10
-                      }}>
+                      <div className="absolute -top-2 -right-2 z-20 bg-gradient-to-r from-yellow-400 to-amber-500 text-black text-xs font-bold px-2 py-1 rounded-md shadow-xl animate-pulse">
                         ✨ SUPER
                       </div>
                     )}
@@ -244,6 +241,32 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
             transparent
           );
           pointer-events: none;
+        }
+        
+        .super-dapp-container {
+          position: relative;
+          border-radius: 16px;
+          border: 2px solid rgba(255, 215, 0, 0.8);
+          animation: super-glow 3s ease-in-out infinite;
+          box-shadow: 
+            0 0 15px rgba(255, 215, 0, 0.2),
+            0 0 30px rgba(255, 215, 0, 0.1);
+        }
+        
+        
+        @keyframes super-glow {
+          0%, 100% {
+            border-color: rgba(255, 215, 0, 0.6);
+            box-shadow: 
+              0 0 15px rgba(255, 215, 0, 0.2),
+              0 0 30px rgba(255, 215, 0, 0.1);
+          }
+          50% {
+            border-color: rgba(255, 215, 0, 1);
+            box-shadow: 
+              0 0 20px rgba(255, 215, 0, 0.3),
+              0 0 40px rgba(255, 215, 0, 0.15);
+          }
         }
       `}</style>
     </div>

@@ -152,7 +152,7 @@ export function DappDetailModal({ dapp, isOpen, onClose }: DappDetailModalProps)
             </p>
           </div>
 
-          {/* Metrics Grid */}
+          {/* Metrics supprimées - données pas fiables
           <div className="p-6 border-b border-white/10">
             <h3 className="text-lg font-semibold text-white mb-4">Metrics</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -191,33 +191,11 @@ export function DappDetailModal({ dapp, isOpen, onClose }: DappDetailModalProps)
               </div>
             </div>
           </div>
+          */}
 
-          {/* Activity & Social */}
+          {/* Links uniquement - suppression Activity et Metrics */}
           <div className="p-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Activity */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-3">Activity</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">First Activity:</span>
-                    <span className="text-white">{formatDate(dapp.firstActivity)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Last Activity:</span>
-                    <span className="text-white">{formatDate(dapp.lastActivity)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Total Events:</span>
-                    <span className="text-white">{formatNumber(dapp.totalEventCount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-300">Activity Score:</span>
-                    <span className="text-white">{dapp.activityScore.toFixed(1)}</span>
-                  </div>
-                </div>
-              </div>
-
+            <div className="max-w-md mx-auto">
               {/* Links */}
               <div>
                 <h3 className="text-lg font-semibold text-white mb-3">Links</h3>
@@ -267,9 +245,11 @@ export function DappDetailModal({ dapp, isOpen, onClose }: DappDetailModalProps)
                         <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84" />
                       </svg>
                       <span className="text-white">Twitter</span>
+                      {/* Followers cachés temporairement - données pas fiables
                       {dapp.twitterFollowers && (
                         <span className="text-gray-300 text-sm">{formatNumber(dapp.twitterFollowers)} followers</span>
                       )}
+                      */}
                       <svg className="w-4 h-4 text-gray-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
@@ -277,9 +257,9 @@ export function DappDetailModal({ dapp, isOpen, onClose }: DappDetailModalProps)
                   )}
                 </div>
               </div>
-            </div>
           </div>
         </div>
+      </div>
       </div>
 
       <style>{`

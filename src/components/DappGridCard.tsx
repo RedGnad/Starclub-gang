@@ -54,7 +54,7 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
   return (
     <div
       onClick={onClick}
-      className="glass-card group relative overflow-hidden rounded-xl border cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10"
+      className="glass-card group relative overflow-hidden rounded-xl border cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 h-48"
       style={{
         animationDelay: `${index * 50}ms`,
         background: `linear-gradient(135deg, ${getCategoryColor(dapp.category).split(' ')[0]} ${getCategoryColor(dapp.category).split(' ')[1]}, rgba(17, 24, 39, 0.8))`,
@@ -91,10 +91,7 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
               {(dapp.name || dapp.symbol || "?").charAt(0).toUpperCase()}
             </div>
             
-            {/* Quality score badge */}
-            <div className={`absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gray-900/80 border flex items-center justify-center text-xs font-bold ${getQualityScoreColor(dapp.qualityScore)}`}>
-              {Math.round(dapp.qualityScore)}
-            </div>
+            {/* Quality score supprimé - données pas fiables */}
           </div>
           
           <div className="flex-1 min-w-0">
@@ -112,17 +109,7 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
           {dapp.description?.slice(0, 80) + (dapp.description && dapp.description.length > 80 ? "..." : "") || "No description available"}
         </p>
 
-        {/* Metrics compactes */}
-        <div className="flex justify-between items-center text-xs">
-          <div className="flex items-center gap-1 text-blue-300/80">
-            <span>📊</span>
-            <span>{formatNumber(dapp.totalTxCount)}</span>
-          </div>
-          <div className="flex items-center gap-1 text-green-300/80">
-            <span>👥</span>
-            <span>{formatNumber(dapp.uniqueUsers)}</span>
-          </div>
-        </div>
+        {/* Metrics supprimées - données pas fiables */}
 
         {/* Category tag */}
         <div className="mt-3">

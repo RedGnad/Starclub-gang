@@ -322,24 +322,12 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
       dapps.push(dapp);
     }
 
-    // Enrich with intelligent Twitter followers (cache + blockchain estimation)
-    console.log("🧠 Enriching with intelligent followers data...");
+    // Pas d'affichage des followers pour éviter les données incorrectes
+    console.log("⏭️  Skipping Twitter followers (hidden in UI)");
     
     for (const dapp of dapps) {
-      const blockchainMetrics = {
-        contractCount: dapp.contractCount,
-        totalTxCount: dapp.totalTxCount,
-        uniqueUsers: dapp.uniqueUsers,
-        activityScore: dapp.activityScore,
-        qualityScore: dapp.qualityScore,
-        category: dapp.category
-      };
-      
-      const followerData = getFollowersCount(dapp.twitter, blockchainMetrics);
-      dapp.twitterFollowers = followerData.count;
-      
-      const indicator = followerData.isReal ? '✅ REAL' : '🧠 ESTIMATED';
-      console.log(`${indicator} ${dapp.name}: ${followerData.count.toLocaleString()} followers (${followerData.source})`);
+      // On met null pour ne pas afficher de followers
+      dapp.twitterFollowers = null;
     }
 
     // Sort by quality score descending

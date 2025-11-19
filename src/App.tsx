@@ -3,7 +3,10 @@ import { useAccount, useDisconnect } from "wagmi";
 import { LoginModal } from "./components/LoginModal";
 import { DiscoveryModal } from "./components/DiscoveryModal";
 import { MissionPanel } from "./components/MissionPanel";
+import { MissionModal } from "./components/MissionModal";
 import { BackendTest } from "./components/BackendTest";
+import { useMissions } from "./hooks/useMissions";
+import { useSuperDApps } from "./hooks/useStarclubAPI";
 import { syncDApps } from "./services/discoveryApi";
 import Spline from "@splinetool/react-spline";
 import {
@@ -28,6 +31,16 @@ function SplinePage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [discoveryOpen, setDiscoveryOpen] = React.useState(false);
   const [missionsOpen, setMissionsOpen] = React.useState(false);
+
+  // Hooks pour les missions cube
+  const { dapps: superDapps } = useSuperDApps();
+  const { 
+    missionTriggered, 
+    activeMission, 
+    triggerCubeMission, 
+    resetMission,
+    trackPosition 
+  } = useMissions();
   const [signed, setSigned] = React.useState(false);
   const [splineLoaded, setSplineLoaded] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
@@ -475,6 +488,7 @@ function SplinePage() {
         const cameraChog = app.findObjectByName("Camera Chog");
         const camera = app.findObjectByName("Camera Yaki");
         const sphereDaily1 = app.findObjectByName("Sphere Daily 1");
+        const sphereVerif = app.findObjectByName("Sphere Verif");
 
         let sphere5Near = false;
         let sphere7Near = false;
@@ -616,6 +630,21 @@ function SplinePage() {
             setMissionsOpen(false);
           }
           previousSphereDaily1State = sphereDaily1Active;
+        }
+
+        // Vérifier Sphere Verif pour les missions cube (détection événement y = -3000)
+        if (sphereVerif) {
+          const sphereVerifY = sphereVerif.position.y;
+          
+          // Détecter l'événement quand la sphère atteint brièvement y ≈ -3000
+          if (sphereVerifY <= -2900 && sphereVerifY >= -3100) {
+            console.log("🎯 CUBE MISSION EVENT DETECTED: Sphere Verif at y=-3000!");
+            
+            // Déclencher mission uniquement si on a des SuperDApps et qu'aucune mission n'est active
+            if (superDapps.length > 0 && !missionTriggered) {
+              triggerCubeMission(superDapps);
+            }
+          }
         }
 
         // RÈGLE STRICTE avec stabilisation : Discovery accessible UNIQUEMENT si Sphere 5 OU Sphere 7 OU Sphere 8 est à y=-1000
@@ -912,6 +941,19 @@ function SplinePage() {
           
           // Simuler la touche M lors de la fermeture
           simulateKeyM();
+        }}
+      />
+
+      {/* Mission Cube Modal */}
+      <MissionModal
+        isOpen={missionTriggered}
+        onClose={() => {
+          console.log("🎯 Cube mission modal closing");
+          resetMission();
+        }}
+        selectedDapp={activeMission}
+        onTrigger={() => {
+          console.log("🎯 Mission trigger activated - User visited dApp");
         }}
       />
 
