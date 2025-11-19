@@ -33,7 +33,7 @@ function SplinePage() {
   const [missionsOpen, setMissionsOpen] = React.useState(false);
 
   // Hooks pour les missions cube
-  const { dapps: superDapps } = useSuperDApps();
+  const { dapps: superDapps, loading: dappsLoading, error: dappsError } = useSuperDApps();
   const { 
     missionTriggered, 
     activeMission, 
@@ -41,6 +41,11 @@ function SplinePage() {
     resetMission,
     trackPosition 
   } = useMissions();
+
+  // Debug SuperDApps loading
+  React.useEffect(() => {
+    console.log(`🚀 SuperDApps state: ${superDapps.length} dApps, loading: ${dappsLoading}, error:`, dappsError);
+  }, [superDapps, dappsLoading, dappsError]);
   const [signed, setSigned] = React.useState(false);
   const [splineLoaded, setSplineLoaded] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
@@ -48,6 +53,13 @@ function SplinePage() {
   const [debugInfo, setDebugInfo] = React.useState<string>("Initializing...");
   const [preloadStatus, setPreloadStatus] = React.useState<string>("");
   const splineAppRef = React.useRef<Application | null>(null);
+  const superDappsRef = React.useRef<any[]>([]);
+
+  // Garder la ref à jour
+  React.useEffect(() => {
+    superDappsRef.current = superDapps;
+    console.log(`🔄 SuperDApps ref updated: ${superDapps.length} dApps`);
+  }, [superDapps]);
 
   // État pour contrôler le blocage des événements Spline
   const [blockSplineEvents, setBlockSplineEvents] = React.useState(false);
@@ -467,7 +479,7 @@ function SplinePage() {
     splineAppRef.current = app;
     setSplineLoaded(true);
     setDebugInfo(
-      "Spline loaded - Searching for Sphere 5, Sphere 7, Sphere 8, Camera Chog, Camera Yaki & Sphere Daily 1..."
+      "Spline loaded - Searching for Sphere 5, Sphere 7, Sphere 8, Camera Chog, Camera Yaki, Sphere Daily 1 & Sphere Verif..."
     );
 
     // États pour suivre les positions précédentes et éviter le clignotement
@@ -502,6 +514,7 @@ function SplinePage() {
         let cameraChogStatus = "NOT FOUND";
         let cameraStatus = "NOT FOUND";
         let sphereDaily1Status = "NOT FOUND";
+        let sphereVerifStatus = "NOT FOUND";
 
         // Vérifier Sphere 5 avec hysteresis pour éviter le clignotement
         if (sphere5) {
@@ -636,13 +649,23 @@ function SplinePage() {
         if (sphereVerif) {
           const sphereVerifY = sphereVerif.position.y;
           
-          // Détecter l'événement quand la sphère atteint brièvement y ≈ -3000
-          if (sphereVerifY <= -2900 && sphereVerifY >= -3100) {
+          sphereVerifStatus = `Position: ${Math.round(sphereVerif.position.x)},${Math.round(
+            sphereVerif.position.y
+          )},${Math.round(sphereVerif.position.z)} | Target: y≈-3000 (±500)`;
+          
+          // Détecter l'événement quand la sphère atteint brièvement y ≈ -3000 (tolérance ±500)
+          if (sphereVerifY <= -2500 && sphereVerifY >= -3500) {
             console.log("🎯 CUBE MISSION EVENT DETECTED: Sphere Verif at y=-3000!");
+            sphereVerifStatus += " | 🎯 CUBE EVENT TRIGGERED!";
             
             // Déclencher mission uniquement si on a des SuperDApps et qu'aucune mission n'est active
-            if (superDapps.length > 0 && !missionTriggered) {
-              triggerCubeMission(superDapps);
+            const currentSuperDapps = superDappsRef.current;
+            console.log(`🔍 SuperDApps available: ${currentSuperDapps.length}, Mission triggered: ${missionTriggered}`);
+            if (currentSuperDapps.length > 0 && !missionTriggered) {
+              console.log("🚀 Triggering cube mission!");
+              triggerCubeMission(currentSuperDapps);
+            } else {
+              console.log("❌ Cannot trigger mission - no SuperDApps or mission already active");
             }
           }
         }
@@ -657,7 +680,7 @@ function SplinePage() {
           stableDiscoveryState = newDiscoveryState;
         }
 
-        const status = `S5: ${sphere5Status} | S7: ${sphere7Status} | S8: ${sphere8Status} | CChog: ${cameraChogStatus} | Cam: ${cameraStatus} | Daily1: ${sphereDaily1Status} | Discovery: ${
+        const status = `S5: ${sphere5Status} | S7: ${sphere7Status} | S8: ${sphere8Status} | CChog: ${cameraChogStatus} | Cam: ${cameraStatus} | Daily1: ${sphereDaily1Status} | Verif: ${sphereVerifStatus} | Discovery: ${
           stableDiscoveryState ? "ACCESSIBLE" : "BLOCKED"
         } | Missions: ${sphereDaily1Active ? "OPEN" : "CLOSED"}`;
         setDebugInfo(status);

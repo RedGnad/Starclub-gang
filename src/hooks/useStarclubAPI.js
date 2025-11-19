@@ -56,13 +56,16 @@ export function useSuperDApps() {
   const [error, setError] = useState(null);
 
   const fetchDApps = useCallback(async () => {
+    console.log('🔍 Fetching SuperDApps...');
     setLoading(true);
     setError(null);
     
     try {
       const result = await starclubAPI.getSuperDApps();
-      setDapps(result.data.dapps || []);
-      console.log('🌟 SuperDApps loaded:', result.data.dapps?.length);
+      console.log('🌟 SuperDApps API result:', result);
+      const dappsArray = result.data.dapps || [];
+      setDapps(dappsArray);
+      console.log(`🌟 SuperDApps loaded: ${dappsArray.length} dApps`, dappsArray);
     } catch (err) {
       setError(err.message);
       console.error('❌ SuperDApps fetch failed:', err);
