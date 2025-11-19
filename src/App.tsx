@@ -15,6 +15,7 @@ import type { Application } from "@splinetool/runtime";
 import { WagmiConfig } from "wagmi";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { config } from "./wagmi";
+import { clearWalletCache } from "./utils/walletCleanup";
 
 const queryClient = new QueryClient();
 
@@ -801,11 +802,15 @@ function SplinePage() {
                 </span>
                 <button
                   onClick={() => {
+                    // Nettoyer complètement la session
                     disconnect();
                     setSigned(false);
-                    if (address) {
-                      localStorage.removeItem(`sherlock_auth_${address}`);
-                    }
+                    
+                    // Utiliser la fonction de nettoyage complète
+                    clearWalletCache();
+                    
+                    // Recharger pour s'assurer que tout est bien nettoyé
+                    setTimeout(() => window.location.reload(), 100);
                   }}
                   style={{
                     background: "rgba(255,255,255,0.2)",

@@ -160,17 +160,8 @@ export class BlockVisionService {
 
     if (!response.ok) {
       console.warn(`⚠️ BlockVision API error: ${response.status} ${response.statusText}`);
-      // TEMPORAIRE : Retourner données de test si API expirée
-      return [{
-        hash: '0xe28e245127cb413fa35220f870418e0b83585f0ca0c089812d911136f2b71a7b',
-        from: userAddress,
-        to: '0xtest',
-        timestamp: Date.now(),
-        blockNumber: 12345,
-        gasUsed: 21000,
-        status: 1,
-        value: '0'
-      }];
+      // FORCE FALLBACK en lançant une erreur pour déclencher le mode fallback
+      throw new Error(`BlockVision API unavailable: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json() as BlockVisionResponse;

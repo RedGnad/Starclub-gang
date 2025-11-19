@@ -131,8 +131,14 @@ if (projectId) {
 }
 
 export const config = createConfig({
-  autoConnect: true,
+  autoConnect: false, // Désactiver la reconnexion automatique
   connectors: finalConnectors,
   publicClient,
   webSocketPublicClient,
+  // Empêcher la persistance
+  storage: {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  },
 });

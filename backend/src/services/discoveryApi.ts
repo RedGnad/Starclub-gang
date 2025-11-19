@@ -1,7 +1,7 @@
 // Service pour récupérer les vraies données depuis GitHub et Google Sheets
 // Basé sur le système de Sherlock-feat-discovery
 
-import { scrapeTwitterFollowers } from './twitterScraperReal.js';
+import { getFollowersCount } from './twitterFollowersCache.js';
 import { cleanTwitterUrl } from './twitterScraper.js';
 
 const GITHUB_PROTOCOLS_DIR_API =
@@ -322,26 +322,24 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
       dapps.push(dapp);
     }
 
-    // Enrich with REAL Twitter data using Puppeteer scraper
-    console.log("🐦 Starting real Twitter scraping...");
-    const dappsWithTwitter = dapps.filter(d => d.twitter);
+    // Enrich with intelligent Twitter followers (cache + blockchain estimation)
+    console.log("🧠 Enriching with intelligent followers data...");
     
-    if (dappsWithTwitter.length > 0) {
-      const twitterUrls = dappsWithTwitter.map(d => d.twitter!);
-      const twitterResults = await scrapeTwitterFollowers(twitterUrls, 3, 1500);
+    for (const dapp of dapps) {
+      const blockchainMetrics = {
+        contractCount: dapp.contractCount,
+        totalTxCount: dapp.totalTxCount,
+        uniqueUsers: dapp.uniqueUsers,
+        activityScore: dapp.activityScore,
+        qualityScore: dapp.qualityScore,
+        category: dapp.category
+      };
       
-      // Apply real scraped followers
-      for (const result of twitterResults) {
-        if (result.success && result.followersCount) {
-          const dapp = dapps.find(d => 
-            d.twitter?.toLowerCase().includes(result.username.toLowerCase())
-          );
-          if (dapp && typeof result.followersCount === 'number') {
-            dapp.twitterFollowers = result.followersCount;
-            console.log(`✅ ${dapp.name}: ${result.followersCount} followers`);
-          }
-        }
-      }
+      const followerData = getFollowersCount(dapp.twitter, blockchainMetrics);
+      dapp.twitterFollowers = followerData.count;
+      
+      const indicator = followerData.isReal ? '✅ REAL' : '🧠 ESTIMATED';
+      console.log(`${indicator} ${dapp.name}: ${followerData.count.toLocaleString()} followers (${followerData.source})`);
     }
 
     // Sort by quality score descending

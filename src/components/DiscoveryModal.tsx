@@ -36,7 +36,7 @@ interface DiscoveryModalProps {
 
 export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModalProps) {
   // BACKEND HOOKS - Plus de fake data !
-  const { protocols: dapps, loading: backgroundLoading, error, sync: handleRefresh } = useProtocols();
+  const { protocols: dapps, loading, backgroundLoading, error, sync: handleRefresh } = useProtocols();
   const { dapps: superDapps } = useSuperDApps();
   
   const [selectedDapp, setSelectedDapp] = useState<DApp | null>(null);
@@ -134,10 +134,10 @@ export function DiscoveryModal({ isOpen, onClose, simulateKeyM }: DiscoveryModal
             </div>
           </div>
 
-          {backgroundLoading ? (
+          {loading && dapps.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-400 border-t-transparent mx-auto mb-4" />
-              <p>🐦 Scraping vrais followers Twitter...</p>
+              <p>🐦 Premier chargement depuis backend...</p>
               <p className="text-sm mt-2">GitHub + Google Sheets + Puppeteer scraper</p>
             </div>
           ) : error ? (

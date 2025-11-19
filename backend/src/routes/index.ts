@@ -4,6 +4,7 @@ import { authRoutes } from './auth.js';
 import { userRoutes } from './user.js';
 import { contractsRoutes } from './contracts.js';
 import { protocolsRoutes } from './protocols.js';
+import { adminRoutes } from './admin.js';
 
 export function setupApiRoutes(app: Express) {
   // Test route
@@ -27,4 +28,5 @@ export function setupApiRoutes(app: Express) {
   app.use('/api/user', userRoutes);
   app.use('/api/contracts', contractsRoutes);
   app.use('/api/protocols', protocolsRoutes);
+  app.use('/api/admin', adminRoutes);
 }

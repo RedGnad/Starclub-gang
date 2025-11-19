@@ -64,6 +64,23 @@ export function LoginModal({
   );
   const [serverVerifying, setServerVerifying] = React.useState(false);
 
+  // Reset états quand erreur de connexion ou annulation
+  React.useEffect(() => {
+    if (connectError) {
+      console.log('🚨 Connection error detected, resetting states...', connectError);
+      setConnectLock(null);
+      setLocalVerifyError(null);
+    }
+  }, [connectError]);
+
+  // Reset si isPending change de true à false sans connexion (annulation)
+  React.useEffect(() => {
+    if (!isPending && !isConnected && connectLock) {
+      console.log('🚨 Connection cancelled, resetting lock...');
+      setTimeout(() => setConnectLock(null), 100);
+    }
+  }, [isPending, isConnected, connectLock]);
+
   // Reset & prepare SIWE message on open/connect
   React.useEffect(() => {
     let cancelled = false;
@@ -294,8 +311,12 @@ export function LoginModal({
                           // Ici on pourrait ajouter un état d'erreur spécifique
                         }
                       } finally {
-                        // Release lock shortly after to allow wallet UI to appear without immediate spam
-                        setTimeout(() => setConnectLock(null), 500);
+                        // Release lock après un court délai, mais pas trop long pour éviter le blocage
+                        setTimeout(() => {
+                          if (!isConnected) {
+                            setConnectLock(null);
+                          }
+                        }, 1000);
                       }
                     }}
                     disabled={disabled}
@@ -363,7 +384,19 @@ export function LoginModal({
                   signRequestedRef.current = false;
                   setConnectLock(null); // Reset connection lock
                   setLocalVerifyError(null); // Clear errors
+                  
+                  // Déconnexion complète avec nettoyage cache
                   disconnect();
+                  
+                  // Nettoyer le cache wagmi pour éviter la reconnexion auto
+                  localStorage.removeItem('wagmi.wallet');
+                  localStorage.removeItem('wagmi.connected');
+                  localStorage.removeItem('wagmi.store');
+                  
+                  // Fermer la modal après nettoyage
+                  setTimeout(() => {
+                    if (onClose) onClose();
+                  }, 100);
                 }}
                 style={outlineButtonStyle}
               >

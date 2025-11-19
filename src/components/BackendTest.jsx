@@ -107,19 +107,56 @@ export function BackendTest() {
         )}
       </div>
 
-      {/* User Interactions */}
+      {/* User Interactions - Detailed */}
       {isConnected && (
         <div style={{ marginBottom: '10px' }}>
-          <strong>🔗 Interactions:</strong>
+          <strong>🔗 Interactions (24h):</strong>
           {interactionsLoading ? (
-            <span style={{ color: 'yellow' }}> Checking...</span>
+            <span style={{ color: 'yellow' }}> Checking blockchain...</span>
           ) : interactions ? (
             <div>
-              <span style={{ color: '#00ff88' }}>
-                ✅ {interactions.totalDappsInteracted || 0} dApps
-              </span>
-              <div style={{ fontSize: '10px', opacity: 0.7 }}>
-                Duration: {interactions.checkDuration}ms
+              <div style={{ 
+                color: interactions.totalDappsInteracted > 0 ? '#00ff88' : 'orange',
+                fontSize: '11px',
+                fontWeight: 'bold'
+              }}>
+                {interactions.totalDappsInteracted > 0 ? '✅' : '⚠️'} {interactions.totalDappsInteracted || 0} SuperDApps used
+              </div>
+              
+              {/* Détail des interactions */}
+              {interactions.interactions && interactions.interactions.length > 0 && (
+                <div style={{ fontSize: '9px', opacity: 0.8, marginTop: '2px' }}>
+                  {interactions.interactions.map((interaction, idx) => (
+                    <div key={idx} style={{ color: '#00ff88', marginBottom: '2px' }}>
+                      • {interaction.dappName} ({interaction.transactionCount} tx)
+                      {interaction.explorerLink && (
+                        <div style={{ marginLeft: '8px', marginTop: '1px' }}>
+                          🔗 <a 
+                            href={interaction.explorerLink} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                              color: '#88ddff', 
+                              textDecoration: 'underline', 
+                              fontSize: '8px' 
+                            }}
+                          >
+                            View TX: {interaction.transactionHash?.slice(0, 8)}...
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div style={{ fontSize: '9px', opacity: 0.6, marginTop: '2px' }}>
+                Check: {interactions.checkDuration}ms | Via BlockVision API
+              </div>
+              
+              {/* SuperDApps disponibles */}
+              <div style={{ fontSize: '9px', opacity: 0.5, marginTop: '3px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2px' }}>
+                SuperDApps tracked: Kuru, Atlantis
               </div>
             </div>
           ) : (

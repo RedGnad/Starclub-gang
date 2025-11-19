@@ -141,10 +141,15 @@ export function useUserInteractions(address, dappId = null) {
 export function useProtocols() {
   const [protocols, setProtocols] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchProtocols = useCallback(async () => {
-    setLoading(true);
+  const fetchProtocols = useCallback(async (isInitialLoad = true) => {
+    if (isInitialLoad) {
+      setLoading(true);
+    } else {
+      setBackgroundLoading(true);
+    }
     setError(null);
     
     try {
@@ -155,30 +160,38 @@ export function useProtocols() {
       setError(err.message);
       console.error('❌ Protocols fetch failed:', err);
     } finally {
-      setLoading(false);
+      if (isInitialLoad) {
+        setLoading(false);
+      } else {
+        setBackgroundLoading(false);
+      }
     }
   }, []);
 
   const syncProtocols = useCallback(async () => {
-    setLoading(true);
+    setBackgroundLoading(true); // Utiliser backgroundLoading pour ne pas cacher les données
     try {
+      console.log('🔄 Sync en arrière-plan démarré...');
       await starclubAPI.syncProtocols();
-      await fetchProtocols(); // Refetch après sync
+      await fetchProtocols(false); // false = pas un chargement initial
+      console.log('✅ Sync en arrière-plan terminé');
     } catch (err) {
       setError(err.message);
+      console.error('❌ Sync failed:', err);
     } finally {
-      setLoading(false);
+      setBackgroundLoading(false);
     }
   }, [fetchProtocols]);
 
   // Auto-fetch au montage du composant
   useEffect(() => {
-    fetchProtocols();
+    fetchProtocols(true); // Premier chargement
   }, [fetchProtocols]);
 
   return { 
     protocols, 
     loading, 
+    backgroundLoading,
     error, 
     fetch: fetchProtocols,
     sync: syncProtocols

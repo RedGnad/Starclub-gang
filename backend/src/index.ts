@@ -28,7 +28,8 @@ app.get('/', (req, res) => {
       'dApp Detection & Discovery', 
       'Contract Analysis',
       'User Interactions Tracking',
-      'Cron Jobs & Scraping',
+      'Intelligent Twitter Followers (Cache + Blockchain)',
+      'Admin Interface for Manual Data',
       'Prisma Database'
     ],
     endpoints: {
@@ -38,7 +39,8 @@ app.get('/', (req, res) => {
       auth: '/api/auth/*',
       user: '/api/user/*',
       contracts: '/api/contracts/*',
-      protocols: '/api/protocols/*'
+      protocols: '/api/protocols/*',
+      admin: '/api/admin/*'
     }
   });
 });
