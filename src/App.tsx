@@ -84,17 +84,26 @@ function SplinePage() {
 
   // Fonctions de gestion des vérifications pour le tracker
   const onVerificationStart = React.useCallback((verificationInfo: any) => {
-    console.log("🔄 Verification started:", verificationInfo);
-    setActiveVerifications((prev) => [...prev, verificationInfo]);
+    console.log("🔄 [App] Verification started:", verificationInfo);
+    setActiveVerifications((prev) => {
+      const updated = [...prev, verificationInfo];
+      console.log(`📊 [App] Active verifications after start:`, updated);
+      return updated;
+    });
   }, []);
 
   const onVerificationUpdate = React.useCallback(
     (verificationId: string, attempt: number) => {
-      setActiveVerifications((prev) =>
-        prev.map((verif) =>
-          verif.id === verificationId ? { ...verif, attempt } : verif
-        )
+      console.log(
+        `🔄 [App] Verification update: ${verificationId} - attempt ${attempt}`
       );
+      setActiveVerifications((prev) => {
+        const updated = prev.map((verif) =>
+          verif.id === verificationId ? { ...verif, attempt } : verif
+        );
+        console.log(`📊 [App] Active verifications updated:`, updated);
+        return updated;
+      });
     },
     []
   );
@@ -1287,7 +1296,7 @@ function SplinePage() {
           {/* Loading content */}
           <div className="relative z-10 text-center">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-2">SHERLOCK</h1>
+              <h1 className="text-4xl font-bold text-white mb-2">STARCLUB</h1>
               <p className="text-white/70 text-lg">Loading 3D Environment...</p>
             </div>
 
