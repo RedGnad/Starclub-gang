@@ -272,11 +272,6 @@ export function MissionModal({
                   setTimeout(() => setShowSuccessToast(false), 3000);
                   setIsVerifying(false);
 
-                  // Fermer le modal automatiquement après succès
-                  setTimeout(() => {
-                    onClose();
-                  }, 500);
-
                   return true;
                 } else {
                   console.log("⏳ Waiting... no count increase yet");
@@ -338,6 +333,12 @@ export function MissionModal({
 
       // Démarrer la vérification en arrière-plan
       verifyInBackground();
+
+      // Fermer le modal IMMÉDIATEMENT - La vérification continue en arrière-plan
+      console.log(
+        "🔄 Modal closed after starting verification - tracking continues in background"
+      );
+      onClose();
     } catch (error) {
       console.error("Failed to start background verification:", error);
       setIsVerifying(false);
