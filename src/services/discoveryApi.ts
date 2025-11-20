@@ -1,7 +1,16 @@
 // Service pour récupérer les vraies données depuis GitHub et Google Sheets
 // Basé sur le système de Sherlock-feat-discovery
 
-import { enrichTwitterData, cleanTwitterUrl } from './twitterScraper';
+// Fonctions Twitter simplifiées
+const cleanTwitterUrl = (url: string): string => {
+  if (!url) return '';
+  return url.replace(/^https?:\/\/(www\.)?(twitter\.com|x\.com)\//, '').replace(/\/$/, '');
+};
+
+const enrichTwitterData = async (dapps: any[]): Promise<any[]> => {
+  // Version simplifiée - pas de scraping en frontend
+  return dapps;
+};
 
 const GITHUB_PROTOCOLS_DIR_API =
   "https://api.github.com/repos/monad-crypto/protocols/contents/testnet";
