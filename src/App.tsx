@@ -8,6 +8,7 @@ import { VerificationTracker } from "./components/VerificationTracker";
 import { BackendTest } from "./components/BackendTest";
 import { useMissions } from "./hooks/useMissions";
 import { useSuperDApps } from "./hooks/useStarclubAPI";
+import { starclubAPI } from "./services/api";
 import { syncDApps } from "./services/discoveryApi";
 import Spline from "@splinetool/react-spline";
 import {
@@ -32,25 +33,49 @@ function SplinePage() {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [discoveryOpen, setDiscoveryOpen] = React.useState(false);
   const [missionsOpen, setMissionsOpen] = React.useState(false);
+  const [missionsOpenedBy, setMissionsOpenedBy] = React.useState<
+    "sphere-daily" | "mission-chog" | null
+  >(null);
 
   const [lastMissionTrigger, setLastMissionTrigger] = React.useState(0);
   const MISSION_COOLDOWN = 2000; // 2 secondes entre les missions
 
-  // État pour compter les cubes gagnés
-  const [cubesEarned, setCubesEarned] = React.useState(() => {
-    const saved = localStorage.getItem("cubes_earned");
-    return saved ? parseInt(saved, 10) : 0;
-  });
+  // État pour compter les cubes gagnés (lié au wallet)
+  const [cubesEarned, setCubesEarned] = React.useState(0);
+
+  // Charger les cubes quand l'adresse change
+  React.useEffect(() => {
+    const loadCubes = async () => {
+      if (address) {
+        try {
+          const response = await starclubAPI.getUserCubes(address);
+          setCubesEarned(response.data.cubes);
+        } catch (error) {
+          console.warn("Failed to load cubes:", error);
+          setCubesEarned(0);
+        }
+      } else {
+        setCubesEarned(0);
+      }
+    };
+    loadCubes();
+  }, [address]);
 
   // Fonction pour incrémenter les cubes
-  const incrementCubes = React.useCallback(() => {
-    setCubesEarned((prev) => {
-      const newCount = prev + 1;
-      localStorage.setItem("cubes_earned", newCount.toString());
-      console.log("🎲 Cube earned! Total cubes:", newCount);
-      return newCount;
-    });
-  }, []);
+  const incrementCubes = React.useCallback(async () => {
+    if (!address) {
+      console.warn("Cannot earn cubes without wallet connection");
+      return;
+    }
+
+    try {
+      const response = await starclubAPI.incrementUserCubes(address);
+      setCubesEarned(response.data.cubes);
+      console.log("🎲 Cube earned! Total cubes:", response.data.cubes);
+    } catch (error) {
+      console.error("Failed to increment cubes:", error);
+    }
+  }, [address]);
 
   // État des vérifications en cours
   const [activeVerifications, setActiveVerifications] = React.useState<any[]>(
@@ -83,6 +108,7 @@ function SplinePage() {
     dapps: superDapps,
     loading: dappsLoading,
     error: dappsError,
+    refresh: refreshSuperDApps,
   } = useSuperDApps();
   const {
     missionTriggered,
@@ -91,6 +117,19 @@ function SplinePage() {
     resetMission,
     trackPosition,
   } = useMissions();
+
+  // Forcer un refresh des SuperDApps au montage pour avoir les nouvelles dApps
+  React.useEffect(() => {
+    const refreshOnMount = async () => {
+      console.log("🔄 Refreshing SuperDApps on component mount...");
+      try {
+        await refreshSuperDApps();
+      } catch (error) {
+        console.error("❌ Failed to refresh SuperDApps:", error);
+      }
+    };
+    refreshOnMount();
+  }, []); // Une seule fois au montage
 
   // Fonction pour traiter la prochaine mission dans la queue
   const processNextMission = React.useCallback(() => {
@@ -140,6 +179,12 @@ function SplinePage() {
       `🚀 SuperDApps state: ${superDapps.length} dApps, loading: ${dappsLoading}, error:`,
       dappsError
     );
+    if (superDapps.length > 0) {
+      console.log(
+        "📋 SuperDApps names:",
+        superDapps.map((d: any) => d.name)
+      );
+    }
   }, [superDapps, dappsLoading, dappsError]);
   const [signed, setSigned] = React.useState(false);
   const [splineLoaded, setSplineLoaded] = React.useState(false);
@@ -433,33 +478,27 @@ function SplinePage() {
     }
   }, [discoveryOpen, modalOpen]);
 
-  // Fonction pour précharger les dApps en arrière-plan
+  // Function to preload dApps in background
   const preloadDAppsIfNeeded = async () => {
     try {
-      // Vérifier si on a déjà des données en cache
-      const cached = localStorage.getItem(DAPPS_CACHE_KEY);
-      if (cached) {
-        const { data } = JSON.parse(cached);
-        if (data && data.length > 0) {
-          console.log(
-            `🚀 Cache dApps trouvé (${data.length} protocoles) - pas de preload nécessaire`
-          );
-          setPreloadStatus(`📦 ${data.length} dApps déjà en cache`);
-          return;
-        }
+      // Check if we already have cached data
+      const existingDapps = await starclubAPI.getProtocols();
+      if (existingDapps?.data?.protocols?.length > 50) {
+        console.log("DApps already loaded, skipping preload");
+        setPreloadStatus("DApps already loaded");
+        return;
       }
 
-      console.log("📦 Aucun cache dApps - démarrage preload...");
+      console.log("Starting background dApps preload...");
+      setPreloadStatus("Preload in progress...");
 
-      console.log("🔄 Démarrage du preload dApps en arrière-plan...");
-      setPreloadStatus("🔄 Preload en cours...");
-
-      // S'enregistrer pour le debug de progrès dans l'app
+      // Register for debug progress in app
       const appProgressCallback = (current: number, total: number) => {
-        console.log(`🔄 Preload progress: ${current}/${total}`);
+        console.log(`Preload progress: ${current}/${total}`);
       };
       addProgressCallback(appProgressCallback);
 
+      // Create shared sync
       // Créer une synchronisation partagée
       const syncPromise = createSharedSync((progressCb) =>
         syncDApps(progressCb)
@@ -488,16 +527,16 @@ function SplinePage() {
             );
           }
 
-          setPreloadStatus(`✅ ${dapps.length} dApps préchargées`);
+          setPreloadStatus(`✅ ${dapps.length} dApps preloaded`);
           removeProgressCallback(appProgressCallback);
           return dapps;
         })
         .catch((error) => {
-          console.warn("⚠️ Erreur preload dApps:", error);
-          setPreloadStatus("⚠️ Erreur preload");
+          console.warn("⚠️ DApps preload error:", error);
+          setPreloadStatus("⚠️ Preload error");
           removeProgressCallback(appProgressCallback);
 
-          // Ne pas bloquer l'app en cas d'erreur
+          // Don't block app on error
           throw error;
         });
     } catch (error) {
@@ -576,17 +615,36 @@ function SplinePage() {
     };
   }, []);
 
-  // Auth state management
+  // Auth state management - MIGRÉ VERS API BACKEND
   React.useEffect(() => {
-    if (isConnected && address) {
-      const key = `sherlock_auth_${address}`;
-      setSigned(!!localStorage.getItem(key));
-      if (!localStorage.getItem(key)) {
-        setModalOpen(true);
+    const checkAuthentication = async () => {
+      if (isConnected && address) {
+        try {
+          const response = await starclubAPI.checkSession(address);
+          const isAuthenticated = response.data.authenticated;
+          setSigned(isAuthenticated);
+
+          if (!isAuthenticated) {
+            setModalOpen(true);
+          }
+
+          console.log(
+            `🔐 Auth check for ${address}: ${
+              isAuthenticated ? "authenticated" : "needs auth"
+            }`
+          );
+        } catch (error) {
+          console.warn("Failed to check authentication:", error);
+          // Fallback: demander auth si erreur API
+          setSigned(false);
+          setModalOpen(true);
+        }
+      } else {
+        setSigned(false);
       }
-    } else {
-      setSigned(false);
-    }
+    };
+
+    checkAuthentication();
   }, [isConnected, address]);
 
   function onLoad(app: Application) {
@@ -594,7 +652,7 @@ function SplinePage() {
     splineAppRef.current = app;
     setSplineLoaded(true);
     setDebugInfo(
-      "Spline loaded - Searching for Sphere 5, Sphere 7, Sphere 8, Camera Chog, Camera Yaki, Sphere Daily 1 & Sphere Verif..."
+      "Spline loaded - Searching for Sphere 5, Sphere 7, Sphere 8, Camera Chog, Camera Yaki, Sphere Daily 1, Mission Chog & Sphere Verif..."
     );
 
     // États pour suivre les positions précédentes et éviter le clignotement
@@ -604,6 +662,7 @@ function SplinePage() {
     let previousSphere8State = false;
     let previousCameraState = false;
     let previousSphereDaily1State = false;
+    let previousMissionChogState = false;
     let stableDiscoveryState = false;
 
     // Fonction pour vérifier la position des sphères et objets (Sphere 5, Sphere 7, Sphere 8, Camera Chog, Camera Yaki)
@@ -615,6 +674,7 @@ function SplinePage() {
         const cameraChog = app.findObjectByName("Camera Chog");
         const camera = app.findObjectByName("Camera Yaki");
         const sphereDaily1 = app.findObjectByName("Sphere Daily 1");
+        const missionChog = app.findObjectByName("Mission Chog");
         const sphereVerif = app.findObjectByName("Sphere Verif");
 
         let sphere5Near = false;
@@ -623,12 +683,14 @@ function SplinePage() {
         let cameraChogActive = false;
         let cameraActive = false;
         let sphereDaily1Active = false;
+        let missionChogActive = false;
         let sphere5Status = "NOT FOUND";
         let sphere7Status = "NOT FOUND";
         let sphere8Status = "NOT FOUND";
         let cameraChogStatus = "NOT FOUND";
         let cameraStatus = "NOT FOUND";
         let sphereDaily1Status = "NOT FOUND";
+        let missionChogStatus = "NOT FOUND";
         let sphereVerifStatus = "NOT FOUND";
 
         // Vérifier Sphere 5 avec hysteresis pour éviter le clignotement
@@ -700,11 +762,11 @@ function SplinePage() {
           )}`;
         }
 
-        // Vérifier Camera Chog - STRICTEMENT y=167.30 (±2 tolérance)
+        // Vérifier Camera Chog - STRICTEMENT y=145.40 (±2 tolérance)
         if (cameraChog) {
-          cameraChogActive = Math.abs(cameraChog.position.y - 167.3) < 2;
+          cameraChogActive = Math.abs(cameraChog.position.y - 145.4) < 2;
           cameraChogStatus = `${
-            cameraChogActive ? "TRIGGER (y≈167.30)" : "IDLE"
+            cameraChogActive ? "TRIGGER (y≈145.40)" : "IDLE"
           } | Position: ${Math.round(cameraChog.position.x)},${
             Math.round(cameraChog.position.y * 100) / 100
           },${Math.round(cameraChog.position.z)}`;
@@ -755,13 +817,42 @@ function SplinePage() {
           if (sphereDaily1Active && !previousSphereDaily1State) {
             console.log("🎯 Sphere Daily 1 activated - opening missions modal");
             setMissionsOpen(true);
+            setMissionsOpenedBy("sphere-daily");
           } else if (!sphereDaily1Active && previousSphereDaily1State) {
             console.log(
               "🎯 Sphere Daily 1 deactivated - closing missions modal"
             );
             setMissionsOpen(false);
+            setMissionsOpenedBy(null);
           }
           previousSphereDaily1State = sphereDaily1Active;
+        }
+
+        // Vérifier Mission Chog pour les missions quotidiennes (y = -1221.53)
+        if (missionChog) {
+          const missionChogDistance = Math.abs(
+            missionChog.position.y - -1221.53
+          );
+          missionChogActive = missionChogDistance < 5; // Tolérance de ±5
+          missionChogStatus = `${
+            missionChogActive ? "ACTIVE (y≈-1221.53)" : "INACTIVE"
+          } | Position: ${Math.round(missionChog.position.x)},${
+            Math.round(missionChog.position.y * 100) / 100
+          },${Math.round(missionChog.position.z)} | Distance: ${Math.round(
+            missionChogDistance
+          )}`;
+
+          // Ouvrir/fermer le modal missions selon la position
+          if (missionChogActive && !previousMissionChogState) {
+            console.log("🎯 Mission Chog activated - opening missions modal");
+            setMissionsOpen(true);
+            setMissionsOpenedBy("mission-chog");
+          } else if (!missionChogActive && previousMissionChogState) {
+            console.log("🎯 Mission Chog deactivated - closing missions modal");
+            setMissionsOpen(false);
+            setMissionsOpenedBy(null);
+          }
+          previousMissionChogState = missionChogActive;
         }
 
         // Vérifier Sphere Verif pour les missions cube (détection événement y = -3000)
@@ -824,9 +915,11 @@ function SplinePage() {
           stableDiscoveryState = newDiscoveryState;
         }
 
-        const status = `S5: ${sphere5Status} | S7: ${sphere7Status} | S8: ${sphere8Status} | CChog: ${cameraChogStatus} | Cam: ${cameraStatus} | Daily1: ${sphereDaily1Status} | Verif: ${sphereVerifStatus} | Discovery: ${
+        const status = `S5: ${sphere5Status} | S7: ${sphere7Status} | S8: ${sphere8Status} | CChog: ${cameraChogStatus} | Cam: ${cameraStatus} | Daily1: ${sphereDaily1Status} | MChog: ${missionChogStatus} | Verif: ${sphereVerifStatus} | Discovery: ${
           stableDiscoveryState ? "ACCESSIBLE" : "BLOCKED"
-        } | Missions: ${sphereDaily1Active ? "OPEN" : "CLOSED"}`;
+        } | Missions: ${
+          sphereDaily1Active || missionChogActive ? "OPEN" : "CLOSED"
+        }`;
         setDebugInfo(status);
         setNearArcadeMachine(stableDiscoveryState);
 
@@ -929,8 +1022,8 @@ function SplinePage() {
         }}
       />
 
-      {/* Debug Overlay - Discret dans le coin */}
-      {mounted && process.env.NODE_ENV === "development" && (
+      {/* Debug Overlay - MASQUÉ SUR DEMANDE UTILISATEUR */}
+      {/* {mounted && process.env.NODE_ENV === "development" && (
         <div
           style={{
             position: "absolute",
@@ -965,7 +1058,7 @@ function SplinePage() {
             Distance Event → Sphere 5 → Modal Discovery
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Overlay buttons */}
       {mounted && (
@@ -974,7 +1067,6 @@ function SplinePage() {
           <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998]">
             <div className="bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 shadow-2xl">
               <div className="flex items-center gap-3">
-                <div className="text-2xl">🎲</div>
                 <div className="text-white font-bold text-lg">
                   {cubesEarned} Cube{cubesEarned !== 1 ? "s" : ""}
                 </div>
@@ -1071,9 +1163,16 @@ function SplinePage() {
           if (!signed && isConnected) return;
           setModalOpen(false);
         }}
-        onSigned={(sig) => {
+        onSigned={async (sig) => {
           if (address) {
-            localStorage.setItem(`sherlock_auth_${address}`, sig);
+            try {
+              await starclubAPI.storeSession(address, sig, "SIWE signature");
+              console.log(`✅ SIWE session stored for ${address}`);
+            } catch (error) {
+              console.error("Failed to store SIWE session:", error);
+              // Fallback au localStorage si API échoue
+              localStorage.setItem(`sherlock_auth_${address}`, sig);
+            }
           }
           setSigned(true);
           setModalOpen(false);
@@ -1116,13 +1215,35 @@ function SplinePage() {
       <MissionPanel
         isOpen={missionsOpen}
         onClose={() => {
-          console.log("🎯 Mission modal closing - simulating M key");
+          console.log(
+            "🎯 Mission modal closing - executing universal sequence M→C→Y"
+          );
           setMissionsOpen(false);
 
-          // Simuler la touche M lors de la fermeture
-          simulateKeyM();
+          // Séquence universelle de touches pour couvrir toutes les scènes
+          setTimeout(() => {
+            console.log("🎹 Simulating M key");
+            simulateKeyM();
+          }, 100);
+
+          setTimeout(() => {
+            console.log("🎹 Simulating C key");
+            simulateKeyC();
+          }, 200);
+
+          setTimeout(() => {
+            console.log("🎹 Simulating Y key");
+            simulateKeyY();
+          }, 300);
+
+          setMissionsOpenedBy(null);
         }}
-        onDailyCheckin={() => {}} // Temporaire pour le test
+        onDailyCheckin={() => {
+          console.log("📅 Daily check-in triggered!");
+          // TODO: Implémenter l'API de check-in quotidien
+          // Pour l'instant, juste un log et peut-être incrémenter les cubes
+          incrementCubes();
+        }}
       />
 
       {/* Mission Cube Modal */}
@@ -1142,8 +1263,8 @@ function SplinePage() {
         onVerificationEnd={onVerificationEnd}
       />
 
-      {/* Backend Test Panel - Only in development */}
-      {process.env.NODE_ENV === "development" && <BackendTest />}
+      {/* Backend Test Panel - MASQUÉ SUR DEMANDE UTILISATEUR */}
+      {/* {process.env.NODE_ENV === "development" && <BackendTest />} */}
 
       {/* Verification Tracker - Vérifications réelles + Queue */}
       <VerificationTracker
@@ -1162,20 +1283,13 @@ function SplinePage() {
           {/* Loading content */}
           <div className="relative z-10 text-center">
             <div className="mb-8">
-              <div className="w-20 h-20 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-6"></div>
               <h1 className="text-4xl font-bold text-white mb-2">SHERLOCK</h1>
               <p className="text-white/70 text-lg">Loading 3D Environment...</p>
             </div>
 
-            {/* Progress indicator */}
-            <div className="w-80 bg-white/20 rounded-full h-2 mb-4">
-              <div
-                className="bg-white h-2 rounded-full animate-pulse"
-                style={{ width: "60%" }}
-              ></div>
-            </div>
+            {/* Spinner only - no progress bar */}
+            <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mb-6 mx-auto"></div>
 
-            {/* Status */}
             <p className="text-white/50 text-sm">
               {preloadStatus || "Initializing Spline..."}
             </p>

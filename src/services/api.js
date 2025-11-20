@@ -126,6 +126,85 @@ class StarclubAPI {
     return this.request('/api/contracts/test');
   }
 
+  // ============ CUBES ENDPOINTS ============
+  
+  /**
+   * Récupérer les cubes d'un utilisateur
+   */
+  async getUserCubes(address) {
+    return this.request(`/api/cubes/${address}`);
+  }
+
+  /**
+   * Incrémenter les cubes d'un utilisateur
+   */
+  async incrementUserCubes(address) {
+    return this.request(`/api/cubes/${address}/increment`, {
+      method: 'POST'
+    });
+  }
+
+  /**
+   * Récupérer le leaderboard des cubes
+   */
+  async getCubesLeaderboard() {
+    return this.request('/api/cubes');
+  }
+
+  // ============ SESSIONS ENDPOINTS ============
+  
+  /**
+   * Stocker session SIWE
+   */
+  async storeSession(address, signature, message) {
+    return this.request(`/api/sessions/${address}/auth`, {
+      method: 'POST',
+      body: JSON.stringify({
+        signature,
+        message,
+        timestamp: Date.now()
+      })
+    });
+  }
+
+  /**
+   * Vérifier session SIWE
+   */
+  async checkSession(address) {
+    return this.request(`/api/sessions/${address}/auth`);
+  }
+
+  /**
+   * Stocker état de vérification
+   */
+  async storeVerification(address, dappId, dappName, initialCount, startTime) {
+    return this.request(`/api/sessions/${address}/verification`, {
+      method: 'POST',
+      body: JSON.stringify({
+        dappId,
+        dappName,
+        initialCount,
+        startTime
+      })
+    });
+  }
+
+  /**
+   * Récupérer état de vérification
+   */
+  async getVerification(address, dappId) {
+    return this.request(`/api/sessions/${address}/verification/${dappId}`);
+  }
+
+  /**
+   * Supprimer vérification
+   */
+  async deleteVerification(address, dappId) {
+    return this.request(`/api/sessions/${address}/verification/${dappId}`, {
+      method: 'DELETE'
+    });
+  }
+
   // ============ HEALTH ENDPOINTS ============
   
   /**

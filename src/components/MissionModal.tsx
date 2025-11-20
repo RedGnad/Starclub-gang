@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useUserInteractions } from "../hooks/useStarclubAPI";
+import { starclubAPI } from "../services/api";
 import { useMissions } from "../hooks/useMissions";
+import { useUserInteractions } from "../hooks/useStarclubAPI";
 import { useAccount } from "wagmi";
 
 interface MissionModalProps {
@@ -64,8 +65,19 @@ export function MissionModal({
       setMissionComplete(false);
       setShowSuccessToast(false);
 
-      // Nettoyer toute vérification en cours
-      localStorage.removeItem("pending_verification");
+      // Nettoyer toute vérification en cours (API + localStorage)
+      const cleanupVerification = async () => {
+        try {
+          if (address && selectedDapp?.id) {
+            await starclubAPI.deleteVerification(address, selectedDapp.id);
+          }
+        } catch (error) {
+          // Ignore les erreurs de nettoyage initial
+        }
+        localStorage.removeItem("pending_verification");
+      };
+
+      cleanupVerification();
 
       console.log("🔄 Getting REAL current count as baseline...");
 
@@ -139,7 +151,7 @@ export function MissionModal({
       );
       console.log("📊 Initial interaction count:", initialInteractionCount);
 
-      // Stocker la vérification en cours dans localStorage pour persistance
+      // Stocker la vérification en cours dans API backend pour persistance
       const verificationData = {
         dappId: selectedDapp?.id,
         dappName: selectedDapp?.name,
@@ -148,11 +160,29 @@ export function MissionModal({
         address: address,
       };
 
-      localStorage.setItem(
-        "pending_verification",
-        JSON.stringify(verificationData)
-      );
-      console.log("💾 Verification stored - continues even if modal closed");
+      try {
+        if (address && selectedDapp?.id) {
+          await starclubAPI.storeVerification(
+            address,
+            selectedDapp.id,
+            selectedDapp.name,
+            initialInteractionCount,
+            Date.now()
+          );
+          console.log(
+            "💾 Verification stored in API - continues even if modal closed"
+          );
+        }
+      } catch (error) {
+        console.warn(
+          "Failed to store verification in API, using localStorage fallback:",
+          error
+        );
+        localStorage.setItem(
+          "pending_verification",
+          JSON.stringify(verificationData)
+        );
+      }
 
       // Fonction de vérification en arrière-plan
       const verifyInBackground = async (attempt = 1, maxAttempts = 12) => {
@@ -206,9 +236,26 @@ export function MissionModal({
                     currentCount
                   );
 
-                  // Nettoyer le localStorage et timeout
+                  // Nettoyer l'API et localStorage et timeout
+                  try {
+                    if (address && selectedDapp?.id) {
+                      await starclubAPI.deleteVerification(
+                        address,
+                        selectedDapp.id
+                      );
+                      console.log("🗑️ Verification cleared from API");
+                    }
+                  } catch (error) {
+                    console.warn(
+                      "Failed to clear verification from API:",
+                      error
+                    );
+                  }
+
+                  // Fallback: nettoyer localStorage aussi
                   localStorage.removeItem("pending_verification");
                   localStorage.removeItem("mission_baseline_timestamp");
+
                   if (verificationTimeoutRef.current) {
                     clearTimeout(verificationTimeoutRef.current);
                     verificationTimeoutRef.current = null;
@@ -247,8 +294,16 @@ export function MissionModal({
             );
           } else {
             console.log("⏰ Background verification timeout");
+
+            // Nettoyer via API et localStorage
+            if (address && selectedDapp?.id) {
+              starclubAPI
+                .deleteVerification(address, selectedDapp.id)
+                .catch(() => {});
+            }
             localStorage.removeItem("pending_verification");
             localStorage.removeItem("mission_baseline_timestamp");
+
             verificationTimeoutRef.current = null;
             onVerificationEnd(verificationId);
             setIsVerifying(false);
@@ -261,6 +316,12 @@ export function MissionModal({
               5000
             );
           } else {
+            // Nettoyer via API et localStorage en cas d'échec final
+            if (address && selectedDapp?.id) {
+              starclubAPI
+                .deleteVerification(address, selectedDapp.id)
+                .catch(() => {});
+            }
             localStorage.removeItem("pending_verification");
             localStorage.removeItem("mission_baseline_timestamp");
             setIsVerifying(false);
@@ -299,7 +360,6 @@ export function MissionModal({
         <div className="text-center">
           {/* Header */}
           <div className="mb-6">
-            <div className="text-6xl mb-4">🎯</div>
             <h2 className="text-2xl font-bold text-white mb-2">Cube Mission</h2>
             <p className="text-gray-300 text-sm">
               Complete this mission to earn a cube!
@@ -412,7 +472,7 @@ export function MissionModal({
                 onClick={onClose}
                 className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200"
               >
-                🎯 Complete Mission
+                Complete Mission
               </button>
             </div>
           )}
@@ -423,19 +483,12 @@ export function MissionModal({
       {showSuccessToast && (
         <div className="fixed top-4 right-4 z-[10001] bg-gradient-to-r from-green-600 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl border border-green-400/30 backdrop-blur-sm">
           <div className="flex items-center gap-3">
-            <div className="text-2xl">🎲</div>
             <div>
               <div className="font-bold text-sm">Cube Earned!</div>
               <div className="text-xs opacity-90">
                 Mission completed successfully
               </div>
             </div>
-            <button
-              onClick={() => setShowSuccessToast(false)}
-              className="ml-2 text-white/70 hover:text-white text-lg leading-none"
-            >
-              ×
-            </button>
           </div>
         </div>
       )}

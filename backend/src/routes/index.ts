@@ -5,19 +5,23 @@ import { userRoutes } from './user.js';
 import { contractsRoutes } from './contracts.js';
 import { protocolsRoutes } from './protocols.js';
 import { adminRoutes } from './admin.js';
+import { cubesRoutes } from './cubes.js';
+import { sessionsRoutes } from './sessions.js';
 
 export function setupApiRoutes(app: Express) {
   // Test route
   app.get('/api/test', (req, res) => {
     res.json({ 
-      message: 'Backend Starclub CONNECTÉ !', 
+      message: 'Backend Starclub CONNECTED !', 
       version: '2.0.0',
       services: {
         dapps: '✅',
         auth: '✅',
         contracts: '✅',
         protocols: '✅',
-        database: '✅'
+        database: '✅',
+        cubes: '✅',
+        sessions: '✅'
       }
     });
   });
@@ -29,4 +33,6 @@ export function setupApiRoutes(app: Express) {
   app.use('/api/contracts', contractsRoutes);
   app.use('/api/protocols', protocolsRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/cubes', cubesRoutes);
+  app.use('/api/sessions', sessionsRoutes);
 }

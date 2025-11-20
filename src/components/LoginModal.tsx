@@ -35,7 +35,12 @@ export function LoginModal({
   const { chain } = useNetwork();
   const chainId = chain?.id ?? monadTestnet.id;
   const [connectLock, setConnectLock] = React.useState<string | null>(null);
-  const { connect, isLoading: isPending, error: connectError, connectors } = useConnect();
+  const {
+    connect,
+    isLoading: isPending,
+    error: connectError,
+    connectors,
+  } = useConnect();
   const { disconnect } = useDisconnect();
   const {
     switchNetwork: switchChain,
@@ -67,7 +72,10 @@ export function LoginModal({
   // Reset états quand erreur de connexion ou annulation
   React.useEffect(() => {
     if (connectError) {
-      console.log('🚨 Connection error detected, resetting states...', connectError);
+      console.log(
+        "🚨 Connection error detected, resetting states...",
+        connectError
+      );
       setConnectLock(null);
       setLocalVerifyError(null);
     }
@@ -76,7 +84,7 @@ export function LoginModal({
   // Reset si isPending change de true à false sans connexion (annulation)
   React.useEffect(() => {
     if (!isPending && !isConnected && connectLock) {
-      console.log('🚨 Connection cancelled, resetting lock...');
+      console.log("🚨 Connection cancelled, resetting lock...");
       setTimeout(() => setConnectLock(null), 100);
     }
   }, [isPending, isConnected, connectLock]);
@@ -142,7 +150,7 @@ export function LoginModal({
     ) {
       autoSwitchTriedRef.current = true;
       console.log("Auto-switching to Monad Testnet...");
-      
+
       // Délai pour laisser la connexion se stabiliser
       setTimeout(async () => {
         try {
@@ -165,14 +173,14 @@ export function LoginModal({
   // Gestion du curseur pendant la signature
   React.useEffect(() => {
     if (signing) {
-      document.body.classList.add('signing-in-progress');
+      document.body.classList.add("signing-in-progress");
     } else {
-      document.body.classList.remove('signing-in-progress');
+      document.body.classList.remove("signing-in-progress");
     }
-    
+
     // Cleanup au démontage du composant
     return () => {
-      document.body.classList.remove('signing-in-progress');
+      document.body.classList.remove("signing-in-progress");
     };
   }, [signing]);
 
@@ -208,10 +216,10 @@ export function LoginModal({
         }
       }
       gateActiveRef.current = false;
-      
+
       // S'assurer que le curseur se reset à la fermeture
-      document.body.classList.remove('signing-in-progress');
-      
+      document.body.classList.remove("signing-in-progress");
+
       onSigned(signature);
       onClose();
     }
@@ -220,25 +228,34 @@ export function LoginModal({
 
   // Debug des wallets disponibles (dev seulement)
   React.useEffect(() => {
-    if (open && process.env.NODE_ENV === 'development') {
-      console.log("🔍 Available wallets:", connectors.map(c => c.name).join(", "));
+    if (open && process.env.NODE_ENV === "development") {
+      console.log(
+        "🔍 Available wallets:",
+        connectors.map((c) => c.name).join(", ")
+      );
       console.log("🔍 Total connectors:", connectors.length);
-      
-      if (typeof window !== 'undefined') {
+
+      if (typeof window !== "undefined") {
         // Debug complet de Haha
         console.log("=== HAHA DEBUG ===");
         console.log("window.haha exists:", !!(window as any).haha);
-        console.log("window.ethereum.isHaha:", (window as any).ethereum?.isHaha);
-        
+        console.log(
+          "window.ethereum.isHaha:",
+          (window as any).ethereum?.isHaha
+        );
+
         if ((window as any).haha) {
           console.log("window.haha type:", typeof (window as any).haha);
           console.log("window.haha.ethereum:", !!(window as any).haha.ethereum);
-          console.log("window.haha.request:", typeof (window as any).haha.request);
+          console.log(
+            "window.haha.request:",
+            typeof (window as any).haha.request
+          );
           console.log("window.haha keys:", Object.keys((window as any).haha));
         }
-        
+
         // Tester le connector Haha
-        const hahaConnector = connectors.find(c => c.name === "Haha");
+        const hahaConnector = connectors.find((c) => c.name === "Haha");
         if (hahaConnector) {
           console.log("✅ Haha connector found!");
           try {
@@ -257,7 +274,7 @@ export function LoginModal({
 
   if (!open) {
     // S'assurer que le curseur se reset quand le modal se ferme
-    document.body.classList.remove('signing-in-progress');
+    document.body.classList.remove("signing-in-progress");
     return null;
   }
 
@@ -294,20 +311,31 @@ export function LoginModal({
                     onClick={async () => {
                       if (disabled) return;
                       setConnectLock(c.id);
-                      
+
                       try {
                         // Vérifier si le provider du connector est disponible
                         const provider = c.options?.getProvider?.();
                         if (!provider) {
-                          throw new Error(`${c.name} wallet is not installed or not available`);
+                          throw new Error(
+                            `${c.name} wallet is not installed or not available`
+                          );
                         }
-                        
+
                         // Request connect on Monad Testnet directly
-                        await connect({ connector: c, chainId: monadTestnet.id });
+                        await connect({
+                          connector: c,
+                          chainId: monadTestnet.id,
+                        });
                       } catch (error: any) {
-                        console.error(`Connection failed for ${c.name}:`, error);
+                        console.error(
+                          `Connection failed for ${c.name}:`,
+                          error
+                        );
                         // Afficher une erreur utilisateur plus claire
-                        if (error.message?.includes('not installed') || error.message?.includes('not available')) {
+                        if (
+                          error.message?.includes("not installed") ||
+                          error.message?.includes("not available")
+                        ) {
                           // Ici on pourrait ajouter un état d'erreur spécifique
                         }
                       } finally {
@@ -384,15 +412,15 @@ export function LoginModal({
                   signRequestedRef.current = false;
                   setConnectLock(null); // Reset connection lock
                   setLocalVerifyError(null); // Clear errors
-                  
+
                   // Déconnexion complète avec nettoyage cache
                   disconnect();
-                  
+
                   // Nettoyer le cache wagmi pour éviter la reconnexion auto
-                  localStorage.removeItem('wagmi.wallet');
-                  localStorage.removeItem('wagmi.connected');
-                  localStorage.removeItem('wagmi.store');
-                  
+                  localStorage.removeItem("wagmi.wallet");
+                  localStorage.removeItem("wagmi.connected");
+                  localStorage.removeItem("wagmi.store");
+
                   // Fermer la modal après nettoyage
                   setTimeout(() => {
                     if (onClose) onClose();
@@ -490,7 +518,8 @@ const styles: Record<string, React.CSSProperties> = {
   backdrop: {
     position: "fixed",
     inset: 0,
-    background: "linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(30, 30, 60, 0.2))",
+    background:
+      "linear-gradient(135deg, rgba(0, 0, 0, 0.3), rgba(30, 30, 60, 0.2))",
     backdropFilter: "blur(12px) saturate(150%)",
     display: "flex",
     alignItems: "center",
@@ -498,7 +527,8 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 1000,
   },
   modal: {
-    background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
+    background:
+      "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
     backdropFilter: "blur(20px) saturate(180%)",
     borderRadius: 20,
     padding: "32px 36px 40px",
@@ -563,9 +593,7 @@ function buttonStyle(disabled: boolean): React.CSSProperties {
     fontSize: 14,
     fontWeight: 500,
     transition: "all 0.2s ease",
-    boxShadow: disabled 
-      ? "none"
-      : "0 2px 8px rgba(0, 0, 0, 0.3)",
+    boxShadow: disabled ? "none" : "0 2px 8px rgba(0, 0, 0, 0.3)",
   };
 }
 
@@ -583,8 +611,8 @@ const outlineButtonStyle: React.CSSProperties = {
 };
 
 // Ajouter les styles CSS pour les animations liquid glass et fix curseur
-if (typeof document !== 'undefined') {
-  const styleSheet = document.createElement('style');
+if (typeof document !== "undefined") {
+  const styleSheet = document.createElement("style");
   styleSheet.textContent = `
     @keyframes glass-login-appear {
       from {

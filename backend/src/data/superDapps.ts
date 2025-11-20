@@ -84,6 +84,42 @@ export const SUPER_DAPPS: SuperDApp[] = [
     contracts: [
       { name: 'StakingContract', address: '0x2c9C959516e9AAEdB2C748224a41249202ca8BE7' }
     ]
+  },
+  {
+    id: 'monorail',
+    name: 'Monorail',
+    description: 'Advanced DEX with aggregated liquidity and optimal swap routing for maximum efficiency.',
+    category: 'DeFi::DEX',
+    action: 'swap',
+    website: 'https://testnet-preview.monorail.xyz/',
+    isSuper: true,
+    contracts: [
+      { name: 'AggregateContract', address: '0x525B929fCd6a64AfF834f4eeCc6E860486cED700' }
+    ]
+  },
+  {
+    id: 'beanexchange',
+    name: 'Bean Exchange',
+    description: 'Spot trading platform for seamless token swaps with competitive rates and low slippage.',
+    category: 'DeFi::DEX',
+    action: 'swap',
+    website: 'https://spot.bean.exchange/swap',
+    isSuper: true,
+    contracts: [
+      { name: 'SwapRouter', address: '0x04697F2675B8E37406Bfe217161F2e876410138D' }
+    ]
+  },
+  {
+    id: 'octoswap',
+    name: 'OctoSwap',
+    description: 'Fast and reliable decentralized exchange with multi-chain support and optimized trading experience.',
+    category: 'DeFi::DEX',
+    action: 'swap',
+    website: 'https://testnet.octo.exchange/swap',
+    isSuper: true,
+    contracts: [
+      { name: 'ExecuteContract', address: '0x8B1fb7B1da49F111A2C0C11925D5bB86a2fab88E' }
+    ]
   }
 ];
 

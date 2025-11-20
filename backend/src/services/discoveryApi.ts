@@ -225,18 +225,95 @@ async function fetchGoogleSheetsData(): Promise<Record<string, any>> {
  * Map category to standard format
  */
 function mapCategory(category: string): string {
+  // Si c'est déjà au bon format GitHub (ex: "DeFi::DEX"), on l'utilise directement
+  if (category.includes('::')) {
+    const cleanCategory = category
+      .replace('DeFi::', '')
+      .replace('GameFi::', '')
+      .replace('Gaming::', '')
+      .replace('SocialFi::', '')
+      .replace('NFT::', '')
+      .replace('Infra::', '')
+      .replace('DePIN::', '');
+    
+    console.log(`🔍 Mapping category: "${category}" -> "${cleanCategory}"`);
+    
+    const githubCategoryMap: Record<string, string> = {
+      // DeFi categories
+      'DEX': 'DEFI',
+      'DEX Aggregator': 'DEFI', 
+      'Yield': 'DEFI',
+      'Yield Aggregator': 'DEFI',
+      'Other': 'DEFI',
+      'Launchpad': 'DEFI',
+      'Options': 'DEFI',
+      'Derivatives': 'DEFI',
+      'Perpetuals / Derivatives': 'DEFI',
+      'Insurance': 'DEFI',
+      'Stablecoin': 'DEFI',
+      
+      // Lending & Staking
+      'Lending': 'LENDING',
+      'Staking': 'STAKING',
+      'Liquid Staking': 'STAKING',
+      
+      // NFT categories  
+      'NFT': 'NFT',
+      'NFT Marketplace': 'NFT',
+      'Marketplace': 'NFT',
+      
+      // Gaming categories
+      'Gaming': 'GAMEFI',
+      'Games': 'GAMEFI',
+      'Game': 'GAMEFI',
+      
+      // Infrastructure categories
+      'Infrastructure': 'INFRA',
+      'Interoperability': 'INFRA',
+      'Identity': 'INFRA', 
+      'Wallet': 'INFRA',
+      'Analytics': 'INFRA',
+      'Oracle': 'INFRA',
+      
+      // Cross-chain & Bridge
+      'Bridge': 'BRIDGE',
+      'Cross-chain': 'BRIDGE',
+      
+      // DePIN & Compute
+      'Compute': 'DEPIN',
+      'Storage': 'DEPIN',
+      'Network': 'DEPIN',
+      
+      // Social & Governance
+      'Social': 'SOCIAL',
+      'Governance': 'GOVERNANCE',
+      'DAO': 'GOVERNANCE',
+      
+      // Others
+      'Token': 'TOKEN',
+      'AI': 'AI',
+      'Artificial Intelligence': 'AI'
+    };
+    
+    const result = githubCategoryMap[cleanCategory] || 'DEFI';
+    console.log(`🎯 Final mapping: "${cleanCategory}" -> "${result}"`);
+    return result;
+  }
+
+  // Ancien mapping pour compatibilité
   const categoryMap: Record<string, string> = {
     'defi': 'DEFI',
-    'dex': 'DEX', 
+    'dex': 'DEFI', 
     'lending': 'LENDING',
     'nft': 'NFT',
-    'nft marketplace': 'NFT_MARKETPLACE',
+    'nft marketplace': 'NFT',
     'bridge': 'BRIDGE',
     'gaming': 'GAMEFI',
     'social': 'SOCIAL',
     'infrastructure': 'INFRA',
     'governance': 'GOVERNANCE',
     'token': 'TOKEN',
+    'staking': 'STAKING'
   };
 
   const normalized = category.toLowerCase();
@@ -250,11 +327,15 @@ function generateMetrics(protocol: any, enrichment: any) {
   const baseMultiplier = protocol.contractCount * 1000;
   const categoryMultipliers = {
     'DEFI': 2.5,
-    'DEX': 3.0,
-    'BRIDGE': 2.0,
-    'NFT_MARKETPLACE': 1.5,
     'LENDING': 2.2,
+    'STAKING': 2.0,
+    'BRIDGE': 2.0,
+    'NFT': 1.5,
     'GAMEFI': 1.8,
+    'SOCIAL': 1.3,
+    'INFRA': 1.6,
+    'GOVERNANCE': 1.4,
+    'TOKEN': 1.2
   };
   
   const multiplier = categoryMultipliers[protocol.category as keyof typeof categoryMultipliers] || 1.0;

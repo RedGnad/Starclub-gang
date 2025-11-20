@@ -18,24 +18,45 @@ interface DappGridCardProps {
 
 export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
   const getCategoryColor = (category: string) => {
-    const baseCategory = category.split("_")[0];
     const colors: Record<string, string> = {
-      AI: "from-purple-500/30 to-purple-600/40 border-purple-500/40",
-      CEFI: "from-orange-500/30 to-orange-600/40 border-orange-500/40",
-      CONSUMER: "from-pink-500/30 to-pink-600/40 border-pink-500/40",
-      DEFI: "from-green-500/30 to-green-600/40 border-green-500/40",
-      DEPIN: "from-cyan-500/30 to-cyan-600/40 border-cyan-500/40",
-      DESCI: "from-teal-500/30 to-teal-600/40 border-teal-500/40",
-      GAMING: "from-violet-500/30 to-violet-600/40 border-violet-500/40",
-      GOVERNANCE: "from-indigo-500/30 to-indigo-600/40 border-indigo-500/40",
-      INFRA: "from-slate-500/30 to-slate-600/40 border-slate-500/40",
-      NFT: "from-fuchsia-500/30 to-fuchsia-600/40 border-fuchsia-500/40",
-      SOCIAL: "from-blue-500/30 to-blue-600/40 border-blue-500/40",
-      TOKEN: "from-yellow-500/30 to-yellow-600/40 border-yellow-500/40",
-      BRIDGE: "from-purple-500/30 to-purple-600/40 border-purple-500/40",
-      UNKNOWN: "from-gray-500/30 to-gray-600/40 border-gray-500/40",
+      NFT: "from-purple-500/30 to-purple-600/40 border-purple-500/40",
+      GAMEFI: "from-pink-500/30 to-pink-600/40 border-pink-500/40",
+      DEFI: "from-blue-500/30 to-blue-600/40 border-blue-500/40",
+      LENDING: "from-green-500/30 to-green-600/40 border-green-500/40",
+      STAKING: "from-orange-500/30 to-orange-600/40 border-orange-500/40",
+      INFRA: "from-gray-500/30 to-gray-600/40 border-gray-500/40",
+      BRIDGE: "from-cyan-500/30 to-cyan-600/40 border-cyan-500/40",
+      DEPIN: "from-indigo-500/30 to-indigo-600/40 border-indigo-500/40",
+      SOCIAL: "from-rose-500/30 to-rose-600/40 border-rose-500/40",
+      GOVERNANCE: "from-amber-500/30 to-amber-600/40 border-amber-500/40",
+      TOKEN: "from-emerald-500/30 to-emerald-600/40 border-emerald-500/40",
+      AI: "from-violet-500/30 to-violet-600/40 border-violet-500/40",
     };
-    return colors[baseCategory] || colors.UNKNOWN;
+    return (
+      colors[category as keyof typeof colors] ||
+      "from-slate-500/30 to-slate-600/40 border-slate-500/40"
+    );
+  };
+
+  const getCategoryBadgeStyle = (category: string) => {
+    const styles: Record<string, string> = {
+      NFT: "bg-purple-600/20 text-purple-300 border border-purple-500/30",
+      GAMEFI: "bg-pink-600/20 text-pink-300 border border-pink-500/30",
+      DEFI: "bg-blue-600/20 text-blue-300 border border-blue-500/30",
+      LENDING: "bg-green-600/20 text-green-300 border border-green-500/30",
+      STAKING: "bg-orange-600/20 text-orange-300 border border-orange-500/30",
+      INFRA: "bg-gray-600/20 text-gray-300 border border-gray-500/30",
+      BRIDGE: "bg-cyan-600/20 text-cyan-300 border border-cyan-500/30",
+      DEPIN: "bg-indigo-600/20 text-indigo-300 border border-indigo-500/30",
+      SOCIAL: "bg-rose-600/20 text-rose-300 border border-rose-500/30",
+      GOVERNANCE: "bg-amber-600/20 text-amber-300 border border-amber-500/30",
+      TOKEN: "bg-emerald-600/20 text-emerald-300 border border-emerald-500/30",
+      AI: "bg-violet-600/20 text-violet-300 border border-violet-500/30",
+    };
+    return (
+      styles[category as keyof typeof styles] ||
+      "bg-slate-600/20 text-slate-300 border border-slate-500/30"
+    );
   };
 
   const formatNumber = (num: number) => {
@@ -57,14 +78,21 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
       className="glass-card group relative overflow-hidden rounded-xl border cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/10 h-48"
       style={{
         animationDelay: `${index * 50}ms`,
-        background: `linear-gradient(135deg, ${getCategoryColor(dapp.category).split(' ')[0]} ${getCategoryColor(dapp.category).split(' ')[1]}, rgba(17, 24, 39, 0.8))`,
+        background: `linear-gradient(135deg, ${
+          getCategoryColor(dapp.category).split(" ")[0]
+        } ${
+          getCategoryColor(dapp.category).split(" ")[1]
+        }, rgba(17, 24, 39, 0.8))`,
         backdropFilter: "blur(12px)",
-        borderImage: `linear-gradient(135deg, ${getCategoryColor(dapp.category).split(' ')[2].replace('border-', 'rgba(').replace('/40', ', 0.4)')}, transparent) 1`,
+        borderImage: `linear-gradient(135deg, ${getCategoryColor(dapp.category)
+          .split(" ")[2]
+          .replace("border-", "rgba(")
+          .replace("/40", ", 0.4)")}, transparent) 1`,
       }}
     >
       {/* Glassmorphism gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-      
+
       {/* Content */}
       <div className="relative p-4 h-full flex flex-col">
         {/* Header avec logo */}
@@ -90,10 +118,10 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
             >
               {(dapp.name || dapp.symbol || "?").charAt(0).toUpperCase()}
             </div>
-            
+
             {/* Quality score supprimé - données pas fiables */}
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <h3 className="text-white font-semibold text-sm truncate">
               {dapp.name || `DApp #${dapp.id}`}
@@ -106,14 +134,20 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
 
         {/* Description courte */}
         <p className="text-gray-200/90 text-xs leading-relaxed mb-3 flex-1 line-clamp-3">
-          {dapp.description?.slice(0, 80) + (dapp.description && dapp.description.length > 80 ? "..." : "") || "No description available"}
+          {dapp.description?.slice(0, 80) +
+            (dapp.description && dapp.description.length > 80 ? "..." : "") ||
+            "No description available"}
         </p>
 
         {/* Metrics supprimées - données pas fiables */}
 
         {/* Category tag */}
         <div className="mt-3">
-          <span className="inline-block px-2 py-1 rounded-full text-xs font-medium bg-white/10 text-white/90 backdrop-blur-sm">
+          <span
+            className={`inline-block px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${getCategoryBadgeStyle(
+              dapp.category
+            )}`}
+          >
             {dapp.category.replace(/_/g, " ")}
           </span>
         </div>
@@ -121,7 +155,7 @@ export function DappGridCard({ dapp, index, onClick }: DappGridCardProps) {
 
       {/* Hover effect */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-      
+
       <style>{`
         @keyframes slide-up {
           from {

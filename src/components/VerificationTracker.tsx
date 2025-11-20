@@ -25,7 +25,7 @@ export function VerificationTracker({
     <div className="fixed top-20 right-4 z-[9997] max-w-xs">
       <div className="bg-black/80 backdrop-blur-sm border border-white/20 rounded-lg p-3 shadow-xl">
         <div className="text-white text-xs font-bold mb-2 flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
           Missions ({totalItems})
         </div>
 
@@ -41,7 +41,7 @@ export function VerificationTracker({
                 className="bg-white/5 rounded p-2 border border-blue-400/30"
               >
                 <div className="text-white text-xs font-medium truncate flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                   {verif.dappName}
                 </div>
 
