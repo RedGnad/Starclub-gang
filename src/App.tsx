@@ -4,6 +4,7 @@ import { LoginModal } from "./components/LoginModal";
 import { DiscoveryModal } from "./components/DiscoveryModal";
 import { MissionPanel } from "./components/MissionPanel";
 import { MissionModal } from "./components/MissionModal";
+import { VerificationTracker } from "./components/VerificationTracker";
 import { BackendTest } from "./components/BackendTest";
 import { useMissions } from "./hooks/useMissions";
 import { useSuperDApps } from "./hooks/useStarclubAPI";
@@ -32,19 +33,74 @@ function SplinePage() {
   const [discoveryOpen, setDiscoveryOpen] = React.useState(false);
   const [missionsOpen, setMissionsOpen] = React.useState(false);
 
+  const [lastMissionTrigger, setLastMissionTrigger] = React.useState(0);
+  const MISSION_COOLDOWN = 2000; // 2 secondes entre les missions
+
+  // État pour compter les cubes gagnés
+  const [cubesEarned, setCubesEarned] = React.useState(() => {
+    const saved = localStorage.getItem("cubes_earned");
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  // Fonction pour incrémenter les cubes
+  const incrementCubes = React.useCallback(() => {
+    setCubesEarned((prev) => {
+      const newCount = prev + 1;
+      localStorage.setItem("cubes_earned", newCount.toString());
+      console.log("🎲 Cube earned! Total cubes:", newCount);
+      return newCount;
+    });
+  }, []);
+
+  // Fonctions de gestion des vérifications pour le tracker
+  const onVerificationStart = React.useCallback((verificationInfo: any) => {
+    console.log("🔄 Verification started:", verificationInfo);
+    setActiveVerifications((prev) => [...prev, verificationInfo]);
+  }, []);
+
+  const onVerificationUpdate = React.useCallback(
+    (verificationId: string, attempt: number) => {
+      setActiveVerifications((prev) =>
+        prev.map((verif) =>
+          verif.id === verificationId ? { ...verif, attempt } : verif
+        )
+      );
+    },
+    []
+  );
+
+  const onVerificationEnd = React.useCallback((verificationId: string) => {
+    console.log("✅ Verification ended:", verificationId);
+    setActiveVerifications((prev) =>
+      prev.filter((verif) => verif.id !== verificationId)
+    );
+  }, []);
+
+  // État des vérifications en cours (sera connecté plus tard)
+  const [activeVerifications, setActiveVerifications] = React.useState<any[]>(
+    []
+  );
+
   // Hooks pour les missions cube
-  const { dapps: superDapps, loading: dappsLoading, error: dappsError } = useSuperDApps();
-  const { 
-    missionTriggered, 
-    activeMission, 
-    triggerCubeMission, 
+  const {
+    dapps: superDapps,
+    loading: dappsLoading,
+    error: dappsError,
+  } = useSuperDApps();
+  const {
+    missionTriggered,
+    activeMission,
+    triggerCubeMission,
     resetMission,
-    trackPosition 
+    trackPosition,
   } = useMissions();
 
   // Debug SuperDApps loading
   React.useEffect(() => {
-    console.log(`🚀 SuperDApps state: ${superDapps.length} dApps, loading: ${dappsLoading}, error:`, dappsError);
+    console.log(
+      `🚀 SuperDApps state: ${superDapps.length} dApps, loading: ${dappsLoading}, error:`,
+      dappsError
+    );
   }, [superDapps, dappsLoading, dappsError]);
   const [signed, setSigned] = React.useState(false);
   const [splineLoaded, setSplineLoaded] = React.useState(false);
@@ -65,7 +121,8 @@ function SplinePage() {
   const [blockSplineEvents, setBlockSplineEvents] = React.useState(false);
 
   // État pour empêcher la réouverture immédiate après fermeture
-  const [discoveryClosedRecently, setDiscoveryClosedRecently] = React.useState(false);
+  const [discoveryClosedRecently, setDiscoveryClosedRecently] =
+    React.useState(false);
   const discoveryTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Ouverture automatique du modal Discovery avec délai et protection contre réouverture
@@ -75,28 +132,42 @@ function SplinePage() {
       discoveryOpen,
       modalOpen,
       discoveryClosedRecently,
-      missionsOpen
+      missionsOpen,
     });
-    
+
     // Le modal de missions ne doit pas bloquer l'ouverture du Discovery modal
-    if (nearArcadeMachine && !discoveryOpen && !modalOpen && !discoveryClosedRecently) {
-      console.log("🔍 Sphere conditions met - Starting 1s timer for Discovery modal");
-      
+    if (
+      nearArcadeMachine &&
+      !discoveryOpen &&
+      !modalOpen &&
+      !discoveryClosedRecently
+    ) {
+      console.log(
+        "🔍 Sphere conditions met - Starting 1s timer for Discovery modal"
+      );
+
       // Délai de 1 seconde avant ouverture
       discoveryTimeoutRef.current = setTimeout(() => {
         console.log("🔍 Timer finished, checking conditions again:", {
           nearArcadeMachine,
           discoveryOpen,
           modalOpen,
-          discoveryClosedRecently
+          discoveryClosedRecently,
         });
-        
+
         // Vérifier à nouveau les conditions après le délai (sans tenir compte du modal missions)
-        if (nearArcadeMachine && !discoveryOpen && !modalOpen && !discoveryClosedRecently) {
+        if (
+          nearArcadeMachine &&
+          !discoveryOpen &&
+          !modalOpen &&
+          !discoveryClosedRecently
+        ) {
           console.log("🔍 Auto-opening Discovery modal after 1s delay");
           setDiscoveryOpen(true);
         } else {
-          console.log("🔍 Conditions not met after delay, not opening Discovery modal");
+          console.log(
+            "🔍 Conditions not met after delay, not opening Discovery modal"
+          );
         }
       }, 1000);
     }
@@ -108,7 +179,13 @@ function SplinePage() {
         discoveryTimeoutRef.current = null;
       }
     };
-  }, [nearArcadeMachine, discoveryOpen, modalOpen, discoveryClosedRecently, missionsOpen]);
+  }, [
+    nearArcadeMachine,
+    discoveryOpen,
+    modalOpen,
+    discoveryClosedRecently,
+    missionsOpen,
+  ]);
 
   // Fonction pour simuler un appui de touche 'm' (cycle complet keydown + keyup)
   const simulateKeyM = () => {
@@ -438,7 +515,6 @@ function SplinePage() {
         });
       }
 
-
       // Action avec la touche "M"
       if (e.key.toLowerCase() === "m") {
         if (e.type === "keydown") {
@@ -624,7 +700,9 @@ function SplinePage() {
 
         // Vérifier Sphere Daily 1 pour les missions quotidiennes (y = -2000)
         if (sphereDaily1) {
-          const sphereDaily1Distance = Math.abs(sphereDaily1.position.y - -2000);
+          const sphereDaily1Distance = Math.abs(
+            sphereDaily1.position.y - -2000
+          );
           sphereDaily1Active = sphereDaily1Distance < 50;
           sphereDaily1Status = `${
             sphereDaily1Active ? "MISSIONS ACTIVE (y≈-2000)" : "IDLE"
@@ -639,7 +717,9 @@ function SplinePage() {
             console.log("🎯 Sphere Daily 1 activated - opening missions modal");
             setMissionsOpen(true);
           } else if (!sphereDaily1Active && previousSphereDaily1State) {
-            console.log("🎯 Sphere Daily 1 deactivated - closing missions modal");
+            console.log(
+              "🎯 Sphere Daily 1 deactivated - closing missions modal"
+            );
             setMissionsOpen(false);
           }
           previousSphereDaily1State = sphereDaily1Active;
@@ -648,24 +728,32 @@ function SplinePage() {
         // Vérifier Sphere Verif pour les missions cube (détection événement y = -3000)
         if (sphereVerif) {
           const sphereVerifY = sphereVerif.position.y;
-          
-          sphereVerifStatus = `Position: ${Math.round(sphereVerif.position.x)},${Math.round(
-            sphereVerif.position.y
-          )},${Math.round(sphereVerif.position.z)} | Target: y≈-3000 (±500)`;
-          
+
+          sphereVerifStatus = `Position: ${Math.round(
+            sphereVerif.position.x
+          )},${Math.round(sphereVerif.position.y)},${Math.round(
+            sphereVerif.position.z
+          )} | Target: y≈-3000 (±500)`;
+
           // Détecter l'événement quand la sphère atteint brièvement y ≈ -3000 (tolérance ±500)
           if (sphereVerifY <= -2500 && sphereVerifY >= -3500) {
-            console.log("🎯 CUBE MISSION EVENT DETECTED: Sphere Verif at y=-3000!");
+            console.log(
+              "🎯 CUBE MISSION EVENT DETECTED: Sphere Verif at y=-3000!"
+            );
             sphereVerifStatus += " | 🎯 CUBE EVENT TRIGGERED!";
-            
+
             // Déclencher mission uniquement si on a des SuperDApps et qu'aucune mission n'est active
             const currentSuperDapps = superDappsRef.current;
-            console.log(`🔍 SuperDApps available: ${currentSuperDapps.length}, Mission triggered: ${missionTriggered}`);
+            console.log(
+              `🔍 SuperDApps available: ${currentSuperDapps.length}, Mission triggered: ${missionTriggered}`
+            );
             if (currentSuperDapps.length > 0 && !missionTriggered) {
               console.log("🚀 Triggering cube mission!");
               triggerCubeMission(currentSuperDapps);
             } else {
-              console.log("❌ Cannot trigger mission - no SuperDApps or mission already active");
+              console.log(
+                "❌ Cannot trigger mission - no SuperDApps or mission already active"
+              );
             }
           }
         }
@@ -771,7 +859,7 @@ function SplinePage() {
     >
       {/* Spline plein écran */}
       <Spline
-        scene="https://prod.spline.design/SnxO7ZktKeRsjDgT/scene.splinecode"
+        scene="https://prod.spline.design/eUR0ZkHlU2oliRLX/scene.splinecode"
         onLoad={onLoad}
         renderOnDemand={false}
         style={{
@@ -826,6 +914,17 @@ function SplinePage() {
       {/* Overlay buttons */}
       {mounted && (
         <>
+          {/* Compteur de cubes en haut de l'écran */}
+          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998]">
+            <div className="bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 shadow-2xl">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">🎲</div>
+                <div className="text-white font-bold text-lg">
+                  {cubesEarned} Cube{cubesEarned !== 1 ? "s" : ""}
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Bouton disconnect en haut à droite si connecté */}
           {isConnected && (
@@ -857,10 +956,10 @@ function SplinePage() {
                     // Nettoyer complètement la session
                     disconnect();
                     setSigned(false);
-                    
+
                     // Utiliser la fonction de nettoyage complète
                     clearWalletCache();
-                    
+
                     // Recharger pour s'assurer que tout est bien nettoyé
                     setTimeout(() => window.location.reload(), 100);
                   }}
@@ -937,15 +1036,17 @@ function SplinePage() {
       <DiscoveryModal
         isOpen={discoveryOpen}
         onClose={() => {
-          console.log("🔍 Discovery modal closing - Activating cooldown period");
+          console.log(
+            "🔍 Discovery modal closing - Activating cooldown period"
+          );
           setDiscoveryOpen(false);
-          
+
           // Simuler les touches M, C et Y lors de la fermeture
           console.log("🎹 Simulating M, C, Y keys from Discovery modal close");
           simulateKeyM();
           setTimeout(() => simulateKeyC(), 100);
           setTimeout(() => simulateKeyY(), 200);
-          
+
           // Activer la protection contre réouverture pendant 1 seconde
           setDiscoveryClosedRecently(true);
           setTimeout(() => {
@@ -961,10 +1062,11 @@ function SplinePage() {
         onClose={() => {
           console.log("🎯 Mission modal closing - simulating M key");
           setMissionsOpen(false);
-          
+
           // Simuler la touche M lors de la fermeture
           simulateKeyM();
         }}
+        onDailyCheckin={() => {}} // Temporaire pour le test
       />
 
       {/* Mission Cube Modal */}
@@ -978,10 +1080,49 @@ function SplinePage() {
         onTrigger={() => {
           console.log("🎯 Mission trigger activated - User visited dApp");
         }}
+        onCubeEarned={incrementCubes}
+        onVerificationStart={onVerificationStart}
+        onVerificationUpdate={onVerificationUpdate}
+        onVerificationEnd={onVerificationEnd}
       />
 
       {/* Backend Test Panel - Only in development */}
-      {process.env.NODE_ENV === 'development' && <BackendTest />}
+      {process.env.NODE_ENV === "development" && <BackendTest />}
+
+      {/* Verification Tracker - Vérifications réelles */}
+      <VerificationTracker verifications={activeVerifications} />
+
+      {/* Spline Loading Screen */}
+      {!splineLoaded && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+          {/* Background pattern */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="h-full w-full bg-[radial-gradient(circle,white_1px,transparent_1px)] [background-size:50px_50px]"></div>
+          </div>
+
+          {/* Loading content */}
+          <div className="relative z-10 text-center">
+            <div className="mb-8">
+              <div className="w-20 h-20 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-6"></div>
+              <h1 className="text-4xl font-bold text-white mb-2">SHERLOCK</h1>
+              <p className="text-white/70 text-lg">Loading 3D Environment...</p>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="w-80 bg-white/20 rounded-full h-2 mb-4">
+              <div
+                className="bg-white h-2 rounded-full animate-pulse"
+                style={{ width: "60%" }}
+              ></div>
+            </div>
+
+            {/* Status */}
+            <p className="text-white/50 text-sm">
+              {preloadStatus || "Initializing Spline..."}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

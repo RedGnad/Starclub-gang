@@ -5,39 +5,37 @@ const STORAGE_KEY = 'sherlock_daily_missions';
 // Missions par défaut pour chaque jour
 const generateDefaultMissions = (date: string): AnyMission[] => [
   {
-    id: `dapp_clicks_${date}`,
-    type: 'dapp_clicks',
-    title: 'Explorer l\'écosystème',
-    description: 'Visiter 4 dApps différentes',
-    target: 4,
-    current: 0,
-    completed: false,
-    requiredDapps: [],
-    clickedDapps: [],
-  },
-  {
-    id: `key_combo_${date}`,
+    id: `daily_checkin_${date}`,
     type: 'key_combo',
-    title: 'Séquence mystère',
-    description: 'Déclencher la combinaison secrète',
+    title: '📅 Daily Check-in',
+    description: 'Se connecter et ouvrir l\'application',
     target: 1,
     current: 0,
     completed: false,
-    requiredCombos: [['x', 'y', 'z']], // Exemple de combo
+    requiredCombos: [['app_opened']], // Événement spécial
     completedCombos: [],
   },
   {
-    id: `position_${date}`,
-    type: 'position_tracking',
-    title: 'Exploration spatiale',
-    description: 'Atteindre 3 positions spéciales',
+    id: `cube_activations_${date}`,
+    type: 'key_combo',
+    title: '🎯 Cube Activator',
+    description: 'Ouvrir 3 fois le modal de mission cube',
     target: 3,
     current: 0,
     completed: false,
-    requiredPositions: [
-      // Positions à définir plus tard quand les objets seront placés
-    ],
-    reachedPositions: [],
+    requiredCombos: [['cube_modal_opened']], // Événement spécial
+    completedCombos: [],
+  },
+  {
+    id: `cube_completions_${date}`,
+    type: 'dapp_clicks',
+    title: '💎 Cube Master',
+    description: 'Compléter 1 mission cube (obtenir 1 cube)',
+    target: 1,
+    current: 0,
+    completed: false,
+    requiredDapps: [], // Sera rempli avec les SuperDApps disponibles
+    clickedDapps: [],
   },
 ];
 

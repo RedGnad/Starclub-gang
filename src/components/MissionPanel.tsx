@@ -5,7 +5,110 @@ import type { AnyMission } from '../types/missions';
 interface MissionPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onDailyCheckin: () => void;
 }
+
+const DailyCheckinItem: React.FC<{ mission: AnyMission; onCheckin: () => void }> = ({ mission, onCheckin }) => {
+  const progressPercentage = Math.min((mission.current / mission.target) * 100, 100);
+  
+  return (
+    <div style={{
+      padding: '12px',
+      background: mission.completed 
+        ? 'rgba(34, 197, 94, 0.1)' 
+        : 'rgba(255, 255, 255, 0.05)',
+      border: `1px solid ${mission.completed ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255, 255, 255, 0.1)'}`,
+      borderRadius: '8px',
+      marginBottom: '8px',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '6px',
+      }}>
+        <h4 style={{
+          margin: 0,
+          color: mission.completed ? '#22c55e' : '#ffffff',
+          fontSize: '14px',
+          fontWeight: '600',
+        }}>
+          {mission.title}
+        </h4>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+        }}>
+          <span style={{
+            color: mission.completed ? '#22c55e' : '#9ca3af',
+            fontSize: '12px',
+            fontWeight: '500',
+          }}>
+            {mission.current}/{mission.target}
+          </span>
+          {!mission.completed && (
+            <button
+              onClick={onCheckin}
+              style={{
+                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                border: 'none',
+                borderRadius: '6px',
+                color: 'white',
+                padding: '4px 8px',
+                fontSize: '11px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              Check-in
+            </button>
+          )}
+          {mission.completed && (
+            <span style={{
+              color: '#22c55e',
+              fontSize: '16px',
+            }}>
+              ✓
+            </span>
+          )}
+        </div>
+      </div>
+      <p style={{
+        margin: '0 0 8px 0',
+        color: '#9ca3af',
+        fontSize: '12px',
+      }}>
+        {mission.description}
+      </p>
+      <div style={{
+        width: '100%',
+        height: '4px',
+        background: 'rgba(255, 255, 255, 0.1)',
+        borderRadius: '2px',
+        overflow: 'hidden',
+      }}>
+        <div style={{
+          width: `${progressPercentage}%`,
+          height: '100%',
+          background: mission.completed 
+            ? 'linear-gradient(90deg, #22c55e, #16a34a)' 
+            : 'linear-gradient(90deg, #3b82f6, #1d4ed8)',
+          transition: 'width 0.3s ease',
+        }} />
+      </div>
+    </div>
+  );
+};
 
 const MissionItem: React.FC<{ mission: AnyMission }> = ({ mission }) => {
   const progressPercentage = Math.min((mission.current / mission.target) * 100, 100);
@@ -73,7 +176,7 @@ const MissionItem: React.FC<{ mission: AnyMission }> = ({ mission }) => {
   );
 };
 
-export const MissionPanel: React.FC<MissionPanelProps> = ({ isOpen, onClose }) => {
+export const MissionPanel: React.FC<MissionPanelProps> = ({ isOpen, onClose, onDailyCheckin }) => {
   const { missions, completed, streak, getMissionStatus } = useMissions();
   const status = getMissionStatus();
 
@@ -168,9 +271,22 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({ isOpen, onClose }) =
 
         {/* Liste des missions */}
         <div>
-          {missions.map(mission => (
-            <MissionItem key={mission.id} mission={mission} />
-          ))}
+          {missions.map(mission => {
+            // Utiliser le composant spécial pour Daily Check-in
+            if (mission.id.includes('daily_checkin')) {
+              return (
+                <DailyCheckinItem 
+                  key={mission.id} 
+                  mission={mission} 
+                  onCheckin={onDailyCheckin}
+                />
+              );
+            }
+            // Composant normal pour les autres missions
+            return (
+              <MissionItem key={mission.id} mission={mission} />
+            );
+          })}
         </div>
 
         {/* Footer */}
