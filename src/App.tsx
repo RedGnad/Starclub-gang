@@ -934,11 +934,9 @@ function SplinePage() {
                   Math.floor(Math.random() * currentSuperDapps.length)
                 ];
 
-              // Vérifier si une vérification est en cours
-              if (activeVerifications.length > 0) {
-                console.log(
-                  "� Verification en cours, ajout à la queue:",
-        }
+              // Mission cube logic commented out for now
+              // TODO: Re-implement cube mission logic if needed
+            }
 
         // RÈGLE STRICTE avec stabilisation : Discovery accessible UNIQUEMENT si Sphere 5 OU Sphere 7 OU Sphere 8 est à y=-1000
         const newDiscoveryState = sphere5Near || sphere7Near || sphere8Near;
