@@ -308,6 +308,11 @@ function SplinePage() {
           !discoveryClosedRecently
         ) {
           console.log("🔍 Auto-opening Discovery modal after 1s delay");
+
+          // Track Discovery Arcade mission
+          console.log("🎯 Tracking Discovery Arcade mission...");
+          trackKeyCombo(["discovery_modal_opened"]);
+
           setDiscoveryOpen(true);
         } else {
           console.log(
