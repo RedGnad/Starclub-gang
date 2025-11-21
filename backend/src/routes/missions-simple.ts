@@ -58,10 +58,17 @@ router.get('/:address', async (req, res) => {
       }
     }
     
-    // 4. Récupérer les missions
-    const userMissions = await prisma.$queryRaw`
+    // 4. Récupérer les missions et mapper les champs
+    const rawMissions = await prisma.$queryRaw`
       SELECT * FROM daily_missions WHERE "userId" = ${userId} AND date = ${today}
     `;
+    
+    // Mapper progress -> current pour le frontend
+    const userMissions = (rawMissions as any[]).map(mission => ({
+      ...mission,
+      current: mission.progress, // Frontend attend 'current' mais DB a 'progress'
+      type: mission.missionType   // Frontend attend 'type' mais DB a 'missionType'
+    }));
     
     res.json({
       success: true,
