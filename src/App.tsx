@@ -130,6 +130,11 @@ function SplinePage() {
     triggerCubeMission,
     resetMission,
     trackPosition,
+    trackDappClick,
+    trackKeyCombo,
+    completeDailyCheckin,
+    markCubeCompleted,
+    checkAllMissionsCompleted,
   } = useMissions();
 
   // Forcer un refresh des SuperDApps au montage pour avoir les nouvelles dApps

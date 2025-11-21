@@ -48,10 +48,34 @@ export function useMissions() {
     
     // Traitement spécial pour cube_modal_opened
     if (keys.includes('cube_modal_opened')) {
-      const result = markCubeActivatorProgress();
-      if (result.giveCube) {
-        console.log(`🎯 ${result.reason} completed! Should award cube`);
-        // Le cube sera géré dans App.tsx
+      console.log("🎯 Marking Cube Activator progress");
+      
+      const updatedState = MissionStorage.updateMissionProgress(
+        `cube_activations_${missionsState.currentDate}`,
+        (mission) => {
+          const newCurrent = Math.min(mission.current + 1, mission.target);
+          
+          console.log(`🎯 Cube Activator: ${newCurrent}/${mission.target}`);
+          
+          return {
+            ...mission,
+            current: newCurrent,
+            completed: newCurrent >= mission.target,
+            // Assigner completedCombos uniquement si c'est une mission key_combo
+            ...(mission.type === 'key_combo' ? {
+              completedCombos: newCurrent >= mission.target ? [['cube_modal_opened']] : (mission as any).completedCombos || [],
+            } : {}),
+          };
+        }
+      );
+      
+      setMissionsState(updatedState);
+      
+      // Vérifier si la mission vient d'être complétée
+      const mission = updatedState.missions.find(m => m.id === `cube_activations_${missionsState.currentDate}`);
+      if (mission && mission.completed && mission.current === mission.target) {
+        console.log("🎯 Cube Activator completed! Awarding 1 cube");
+        // TODO: gérer l'attribution du cube dans App.tsx
       }
       return;
     }
@@ -83,7 +107,7 @@ export function useMissions() {
     );
     
     setMissionsState(updatedState);
-  }, [missionsState.currentDate, markCubeActivatorProgress]);
+  }, [missionsState.currentDate]);
 
   // Tracking des positions - Event Sphere Verif
   const trackPosition = useCallback((objectName: string, position: { x: number; y: number; z: number }) => {
@@ -154,42 +178,6 @@ export function useMissions() {
     return { giveCube: true, reason: 'daily_checkin' };
   }, [missionsState.currentDate]);
 
-  // Marquer la mission Cube Activator comme progressée
-  const markCubeActivatorProgress = useCallback(() => {
-    console.log("🎯 Marking Cube Activator progress");
-    
-    const updatedState = MissionStorage.updateMissionProgress(
-      `cube_activations_${missionsState.currentDate}`,
-      (mission) => {
-        const newCurrent = Math.min(mission.current + 1, mission.target);
-        const isJustCompleted = newCurrent === mission.target && !mission.completed;
-        
-        console.log(`🎯 Cube Activator: ${newCurrent}/${mission.target}`);
-        
-        return {
-          ...mission,
-          current: newCurrent,
-          completed: newCurrent >= mission.target,
-          // Assigner completedCombos uniquement si c'est une mission key_combo
-          ...(mission.type === 'key_combo' ? {
-            completedCombos: newCurrent >= mission.target ? [['cube_modal_opened']] : (mission as any).completedCombos || [],
-          } : {}),
-        };
-      }
-    );
-    
-    setMissionsState(updatedState);
-    
-    // Vérifier si la mission vient d'être complétée
-    const mission = updatedState.missions.find(m => m.id === `cube_activations_${missionsState.currentDate}`);
-    if (mission && mission.completed && mission.current === mission.target) {
-      console.log("🎯 Cube Activator completed! Awarding 1 cube");
-      return { giveCube: true, reason: 'cube_activator' };
-    }
-    
-    return { giveCube: false };
-  }, [missionsState.currentDate]);
-
   // Marquer une mission cube comme complétée - NOUVEAU: donne 1 cube immédiatement
   const markCubeCompleted = useCallback(() => {
     console.log("🎯 Marking cube mission as completed");
@@ -250,7 +238,6 @@ export function useMissions() {
     trackKeyCombo,
     trackPosition,
     completeDailyCheckin,
-    markCubeActivatorProgress,
     markCubeCompleted,
     checkAllMissionsCompleted,
     getMissionStatus,
