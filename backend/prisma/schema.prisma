@@ -11,15 +11,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  address   String   @unique
-  cubes     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  address           String   @unique
+  cubes             Int      @default(0)
+  cubeOpensToday    Int      @default(0)  // Nombre d'ouvertures de cubes aujourd'hui
+  lastCubeOpenDate  String?          // Date de la dernière ouverture (YYYY-MM-DD)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
   
   // Relations
-  missions  DailyMission[]
-  sessions  UserSession[]
+  missions          DailyMission[]
+  sessions          UserSession[]
 
   @@map("users")
 }
