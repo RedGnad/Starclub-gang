@@ -497,12 +497,12 @@ function SplinePage() {
     }, 50); // 50ms de délai réaliste
   };
 
-  // Fonction pour simuler un appui de touche 'z' (cycle complet keydown + keyup)
+  // Fonction pour simuler un appui de touche 'z' PUIS 'x' (cycles complets keydown + keyup)
   const simulateKeyZ = () => {
-    console.log("🎹 Simulating Z key press from HUB button");
+    console.log("🎹 Simulating Z then X key press from HUB button");
 
-    // Créer les événements keydown et keyup
-    const keydownEvent = new KeyboardEvent("keydown", {
+    // --- Séquence Z ---
+    const zKeydown = new KeyboardEvent("keydown", {
       key: "z",
       code: "KeyZ",
       keyCode: 90,
@@ -511,7 +511,7 @@ function SplinePage() {
       cancelable: true,
     });
 
-    const keyupEvent = new KeyboardEvent("keyup", {
+    const zKeyup = new KeyboardEvent("keyup", {
       key: "z",
       code: "KeyZ",
       keyCode: 90,
@@ -520,14 +520,36 @@ function SplinePage() {
       cancelable: true,
     });
 
-    // Simuler le cycle complet keydown -> keyup
-    document.dispatchEvent(keydownEvent);
-
-    // Petit délai pour simuler un vrai appui de touche
+    document.dispatchEvent(zKeydown);
     setTimeout(() => {
-      document.dispatchEvent(keyupEvent);
+      document.dispatchEvent(zKeyup);
       console.log("🎹 Z key up event dispatched");
-    }, 50); // 50ms de délai réaliste
+
+      // --- Enchaîner avec la séquence X ---
+      const xKeydown = new KeyboardEvent("keydown", {
+        key: "x",
+        code: "KeyX",
+        keyCode: 88,
+        which: 88,
+        bubbles: true,
+        cancelable: true,
+      });
+
+      const xKeyup = new KeyboardEvent("keyup", {
+        key: "x",
+        code: "KeyX",
+        keyCode: 88,
+        which: 88,
+        bubbles: true,
+        cancelable: true,
+      });
+
+      document.dispatchEvent(xKeydown);
+      setTimeout(() => {
+        document.dispatchEvent(xKeyup);
+        console.log("🎹 X key up event dispatched");
+      }, 50);
+    }, 50); // 50ms par touche pour un appui réaliste
   };
 
   // Solution radicale pour bloquer TOUS les événements clavier vers Spline
