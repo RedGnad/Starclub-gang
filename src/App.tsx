@@ -202,8 +202,18 @@ function SplinePage() {
       setTimeout(() => {
         processNextMission();
       }, 500); // Petit délai pour laisser le temps aux states de se mettre à jour
+
+      // NOUVEAU: Marquer la mission quotidienne "Cube Master" comme complétée
+      console.log("🎯 Marking cube completion mission as completed");
+      const shouldGiveCube = markCubeCompleted();
+      if (shouldGiveCube) {
+        console.log(
+          "🎲 Toutes les missions quotidiennes complétées via cube mission !"
+        );
+        incrementCubes(); // Donner le cube bonus pour toutes missions complétées
+      }
     },
-    [processNextMission]
+    [processNextMission, markCubeCompleted, incrementCubes]
   );
 
   // Debug SuperDApps loading

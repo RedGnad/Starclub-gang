@@ -231,8 +231,7 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
   onClose,
   onDailyCheckin,
 }) => {
-  const { missions, completed, streak, getMissionStatus } = useMissions();
-  const status = getMissionStatus();
+  const { missions, completed, streak } = useMissions();
 
   if (!isOpen) return null;
 
@@ -295,8 +294,9 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
                 color: "#888",
               }}
             >
-              Streak: {streak} day{streak > 1 ? "s" : ""} • {status.completed}/
-              {status.total} completed
+              Streak: {streak} day{streak > 1 ? "s" : ""} •{" "}
+              {missions.filter((m) => m.completed).length}/{missions.length}{" "}
+              completed
             </p>
           </div>
           <button
