@@ -8,7 +8,7 @@ import { adminRoutes } from './admin.js';
 import { cubesRoutes } from './cubes.js';
 import { sessionsRoutes } from './sessions.js';
 import { missionsRoutes } from './missions.js';
-// import { cubeLimitRoutes } from './cubeLimit.js'; // TODO: Décommenter après schéma DB
+import { cubeLimitRoutes } from './cubeLimit.js';
 
 export function setupApiRoutes(app: Express) {
   // Test route
@@ -41,6 +41,5 @@ export function setupApiRoutes(app: Express) {
   app.use('/api/cubes', cubesRoutes);
   app.use('/api/sessions', sessionsRoutes);
   app.use('/api/missions', missionsRoutes);
-  // TODO: Décommenter après que Prisma ait appliqué le nouveau schéma
-  // app.use('/api/cube-limit', cubeLimitRoutes);
+  app.use('/api/cube-limit', cubeLimitRoutes);
 }
