@@ -44,28 +44,37 @@ export function useMissions() {
 
   // Tracking des combinaisons de touches
   const trackKeyCombo = useCallback((keys: string[]) => {
+    console.log(`⌨️ Key combo detected:`, keys);
+    
+    // Traitement spécial pour cube_modal_opened
+    if (keys.includes('cube_modal_opened')) {
+      const result = markCubeActivatorProgress();
+      if (result.giveCube) {
+        console.log(`🎯 ${result.reason} completed! Should award cube`);
+        // Le cube sera géré dans App.tsx
+      }
+      return;
+    }
+    
     const updatedState = MissionStorage.updateMissionProgress(
-      `key_combo_${missionsState.currentDate}`,
+      `key_combos_${missionsState.currentDate}`,
       (mission) => {
         if (mission.type !== 'key_combo') return mission;
         
-        const keyMission = mission as import('../types/missions').KeyComboMission;
+        const keyMission = mission as any;
+        const requiredCombo = keyMission.requiredCombos[0]; // Premier combo requis
         
-        // Vérifier si la combinaison correspond à une des combinaisons requises
-        const matchingCombo = keyMission.requiredCombos.find((combo: string[]) => 
-          combo.length === keys.length && 
-          combo.every((key: string, index: number) => key.toLowerCase() === keys[index]?.toLowerCase())
-        );
-
-        if (!matchingCombo) return mission;
-
-        const newCompletedCombos = [...keyMission.completedCombos, keys];
-        const newCurrent = newCompletedCombos.length;
+        // Vérifier si les touches correspondent
+        const keysMatch = requiredCombo.every((key: string) => keys.includes(key));
+        if (!keysMatch) return mission;
         
-        console.log(`🎯 Mission: Key combo [${keys.join('-')}] completed (${newCurrent}/${mission.target})`);
+        const newCompletedCombos = [...(keyMission.completedCombos || []), keys];
+        const newCurrent = Math.min(newCompletedCombos.length, keyMission.target);
+        
+        console.log(`⌨️ Key combo progress: ${newCurrent}/${keyMission.target}`);
         
         return {
-          ...keyMission,
+          ...mission,
           completedCombos: newCompletedCombos,
           current: newCurrent,
           completed: newCurrent >= keyMission.target,
@@ -74,7 +83,7 @@ export function useMissions() {
     );
     
     setMissionsState(updatedState);
-  }, [missionsState.currentDate]);
+  }, [missionsState.currentDate, markCubeActivatorProgress]);
 
   // Tracking des positions - Event Sphere Verif
   const trackPosition = useCallback((objectName: string, position: { x: number; y: number; z: number }) => {
@@ -150,7 +159,7 @@ export function useMissions() {
     console.log("🎯 Marking Cube Activator progress");
     
     const updatedState = MissionStorage.updateMissionProgress(
-      `cube_modal_opens_${missionsState.currentDate}`,
+      `cube_activations_${missionsState.currentDate}`,
       (mission) => {
         const newCurrent = Math.min(mission.current + 1, mission.target);
         const isJustCompleted = newCurrent === mission.target && !mission.completed;
@@ -172,7 +181,7 @@ export function useMissions() {
     setMissionsState(updatedState);
     
     // Vérifier si la mission vient d'être complétée
-    const mission = updatedState.missions.find(m => m.id === `cube_modal_opens_${missionsState.currentDate}`);
+    const mission = updatedState.missions.find(m => m.id === `cube_activations_${missionsState.currentDate}`);
     if (mission && mission.completed && mission.current === mission.target) {
       console.log("🎯 Cube Activator completed! Awarding 1 cube");
       return { giveCube: true, reason: 'cube_activator' };
@@ -241,6 +250,7 @@ export function useMissions() {
     trackKeyCombo,
     trackPosition,
     completeDailyCheckin,
+    markCubeActivatorProgress,
     markCubeCompleted,
     checkAllMissionsCompleted,
     getMissionStatus,
