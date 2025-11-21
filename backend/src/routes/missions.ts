@@ -74,6 +74,7 @@ router.get('/:address', async (req, res) => {
     );
 
     if (missingMissions.length > 0) {
+      // PostgreSQL supporte createMany
       await prisma.dailyMission.createMany({
         data: missingMissions.map(template => ({
           userId: user.id,
