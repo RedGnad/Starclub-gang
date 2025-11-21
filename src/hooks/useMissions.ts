@@ -83,6 +83,7 @@ export function useMissions(userAddress?: string) {
   // Tracking des combinaisons de touches
   const trackKeyCombo = useCallback((keys: string[]) => {
     console.log(`⌨️ Key combo detected:`, keys);
+    console.log(`🔍 DEBUG: userAddress in trackKeyCombo:`, userAddress);
     
     if (!userAddress) {
       console.error('❌ Cannot track key combo without user address');
@@ -166,7 +167,17 @@ export function useMissions(userAddress?: string) {
       return { giveCube: false, reason: 'no_address' };
     }
     
+    // Vérifier si déjà complété AVANT de faire l'API call
     const today = missionsState.currentDate;
+    const dailyMission = missionsState.missions.find(m => 
+      (m as any).missionId === `daily_checkin_${today}` || (m as any).id === `check_in_${today}`
+    );
+    
+    if (dailyMission && dailyMission.completed) {
+      console.log("⚠️ Daily check-in already completed today!");
+      return { giveCube: false, reason: 'already_completed' };
+    }
+    
     const result = await updateMissionProgress(`daily_checkin_${today}`, 1);
     
     if (result?.justCompleted) {
@@ -175,7 +186,7 @@ export function useMissions(userAddress?: string) {
     }
     
     return { giveCube: false, reason: 'already_completed' };
-  }, [userAddress, missionsState.currentDate, updateMissionProgress]);
+  }, [userAddress, missionsState.currentDate, missionsState.missions, updateMissionProgress]);
 
   // Marquer une mission cube comme complétée
   const markCubeCompleted = useCallback(async () => {

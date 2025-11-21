@@ -79,7 +79,7 @@ const DailyCheckinItem: React.FC<{
             >
               {mission.current}/{mission.target}
             </span>
-            {!mission.completed && (
+            {!mission.completed ? (
               <button
                 onClick={onCheckin}
                 style={{
@@ -95,6 +95,20 @@ const DailyCheckinItem: React.FC<{
               >
                 Check In
               </button>
+            ) : (
+              <span
+                style={{
+                  background: "#b3f100",
+                  border: "2px solid #b3f100",
+                  borderRadius: "8px",
+                  color: "#0D001D",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                }}
+              >
+                ✓ Completed
+              </span>
             )}
           </div>
         </div>
