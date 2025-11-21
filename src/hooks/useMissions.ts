@@ -130,10 +130,15 @@ export function useMissions() {
   const [activeMission, setActiveMission] = useState<any>(null);
 
   const triggerCubeMission = useCallback((superDapps: any[]) => {
-    if (superDapps.length === 0) return;
+    console.log('🔍 DEBUG triggerCubeMission called with:', superDapps);
+    if (superDapps.length === 0) {
+      console.log('🔍 DEBUG: superDapps.length === 0, returning early');
+      return;
+    }
     
     // Choisir une SuperDApp au hasard
     const randomDapp = superDapps[Math.floor(Math.random() * superDapps.length)];
+    console.log('🔍 DEBUG: randomDapp selected:', randomDapp);
     
     console.log('🎯 CUBE MISSION TRIGGERED:', randomDapp.name);
     
@@ -143,6 +148,7 @@ export function useMissions() {
     
     setActiveMission(randomDapp);
     setMissionTriggered(true);
+    console.log('🔍 DEBUG: triggerCubeMission completed successfully');
   }, [trackKeyCombo]);
 
   const resetMission = useCallback(() => {
