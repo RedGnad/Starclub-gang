@@ -248,6 +248,7 @@ function SplinePage() {
     }
   }, [superDapps, dappsLoading, dappsError]);
   const [signed, setSigned] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false); // Backend session valide
   const [splineLoaded, setSplineLoaded] = React.useState(false);
   const [mounted, setMounted] = React.useState(false);
   const [nearArcadeMachine, setNearArcadeMachine] = React.useState(false);
@@ -686,16 +687,17 @@ function SplinePage() {
       if (isConnected && address) {
         try {
           const response = await starclubAPI.checkSession(address);
-          const isAuthenticated = response.data.authenticated;
-          setSigned(isAuthenticated);
+          const isAuth = response.data.authenticated;
+          setIsAuthenticated(isAuth);
 
-          if (!isAuthenticated) {
+          if (!isAuth) {
             setModalOpen(true);
+            setSigned(false); // Reset signed si pas authentifié
           }
 
           console.log(
             `🔐 Auth check for ${address}: ${
-              isAuthenticated ? "authenticated" : "needs auth"
+              isAuth ? "authenticated" : "needs auth"
             }`
           );
         } catch (error) {
@@ -1128,8 +1130,8 @@ function SplinePage() {
       {/* Overlay buttons */}
       {mounted && (
         <>
-          {/* Compteur de cubes - Affiché seulement après SIWE */}
-          {signed && (
+          {/* Compteur de cubes - Affiché seulement après SIWE réussi dans cette session */}
+          {signed && isAuthenticated && (
             <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998]">
               <div
                 className="bg-[#0D001D] backdrop-blur-xl border-2 border-[#b3f100] rounded-full px-6 py-3 shadow-2xl"
