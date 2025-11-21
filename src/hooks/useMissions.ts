@@ -140,14 +140,10 @@ export function useMissions(userAddress?: string) {
 
   const triggerCubeMission = useCallback((superDapps: any[], passedAddress?: string) => {
     console.log('🔍 DEBUG triggerCubeMission called with:', superDapps);
-    console.log('🔍 DEBUG: userAddress:', userAddress, 'passedAddress:', passedAddress);
     
+    // Utiliser passedAddress OU userAddress
     const effectiveAddress = passedAddress || userAddress;
-    
-    if (!effectiveAddress) {
-      console.error('❌ Cannot trigger cube mission without user address');
-      return;
-    }
+    console.log('🔍 DEBUG: effectiveAddress:', effectiveAddress);
     
     if (superDapps.length === 0) {
       console.log('🔍 DEBUG: superDapps.length === 0, returning early');
@@ -160,32 +156,18 @@ export function useMissions(userAddress?: string) {
     
     console.log('🎯 CUBE MISSION TRIGGERED:', randomDapp.name);
     
-    // NOUVEAU: Tracker l'ouverture du modal cube pour la mission "Cube Activator"
-    console.log('📊 Tracking cube modal opened for mission progress...');
-    
-    // Appeler updateMissionProgress directement avec l'adresse effective
+    // Mettre à jour mission "Cube Activator" SI on a une adresse
     if (effectiveAddress) {
-      console.log('🔍 DEBUG: Calling updateMissionProgress directly with address:', effectiveAddress);
+      console.log('✅ Updating Cube Activator mission for:', effectiveAddress);
       const today = new Date().toISOString().split('T')[0];
-      // Créer une fonction temporaire pour bypasser la vérification d'adresse
-      MissionsAPI.updateMissionProgress(effectiveAddress, `cube_activations_${today}`, 1)
-        .then((response) => {
-          if (response.success) {
-            console.log('✅ Cube mission progress updated successfully');
-            loadMissions(); // Reload missions to get updated state
-          } else {
-            console.error('❌ Failed to update cube mission progress:', response.error);
-          }
-        })
-        .catch((err) => {
-          console.error('❌ Error updating cube mission progress:', err);
-        });
+      updateMissionProgress(`cube_activations_${today}`, 1);
+    } else {
+      console.log('⚠️ No address available, skipping cube mission progress');
     }
     
     setActiveMission(randomDapp);
     setMissionTriggered(true);
-    console.log('🔍 DEBUG: triggerCubeMission completed successfully');
-  }, [userAddress, loadMissions]);
+  }, [userAddress, updateMissionProgress]);
 
   const resetMission = useCallback(() => {
     setMissionTriggered(false);
@@ -201,17 +183,20 @@ export function useMissions(userAddress?: string) {
       return { giveCube: false, reason: 'no_address' };
     }
     
-    // Vérifier si déjà complété AVANT de faire l'API call
+    // Vérifier si déjà complété AVANT l'API call
     const today = missionsState.currentDate;
     const dailyMission = missionsState.missions.find(m => 
-      (m as any).missionId === `daily_checkin_${today}` || (m as any).id === `check_in_${today}`
+      (m as any).missionType === 'daily_checkin' && (m as any).title === 'Daily Check-in'
     );
+    
+    console.log('🔍 DEBUG daily mission found:', dailyMission);
     
     if (dailyMission && dailyMission.completed) {
       console.log("⚠️ Daily check-in already completed today!");
       return { giveCube: false, reason: 'already_completed' };
     }
     
+    // Seulement si pas complété
     const result = await updateMissionProgress(`daily_checkin_${today}`, 1);
     
     if (result?.justCompleted) {
@@ -219,7 +204,7 @@ export function useMissions(userAddress?: string) {
       return { giveCube: true, reason: 'daily_checkin' };
     }
     
-    return { giveCube: false, reason: 'already_completed' };
+    return { giveCube: false, reason: 'api_failed' };
   }, [userAddress, missionsState.currentDate, missionsState.missions, updateMissionProgress]);
 
   // Marquer une mission cube comme complétée
