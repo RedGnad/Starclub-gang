@@ -1126,9 +1126,9 @@ function SplinePage() {
       )} */}
 
       {/* Overlay buttons */}
-      {mounted && (
+      {mounted && signed && (
         <>
-          {/* Compteur de cubes en haut de l'écran */}
+          {/* Compteur de cubes en haut de l'écran - Affiché seulement après SIWE */}
           <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998]">
             <div
               className="bg-[#0D001D] backdrop-blur-xl border-2 border-[#b3f100] rounded-full px-6 py-3 shadow-2xl"
@@ -1308,8 +1308,11 @@ function SplinePage() {
         }}
         onDailyCheckin={() => {
           console.log("📅 Daily check-in triggered!");
-          // TODO: Implémenter l'API de check-in quotidien
-          // Pour l'instant, juste un log et peut-être incrémenter les cubes
+
+          // Marquer la mission daily check-in comme complétée
+          completeDailyCheckin();
+
+          // Incrémenter les cubes via API
           incrementCubes();
         }}
         onClaimRewards={(cubes: number) => {
@@ -1368,17 +1371,11 @@ function SplinePage() {
               <h1 className="text-4xl font-bold text-[#b3f100] mb-2">
                 STARCLUB
               </h1>
-              <p className="text-[#ae67c7] text-lg">
-                Loading 3D Environment...
-              </p>
+              <p className="text-[#ae67c7] text-lg">Loading Environment...</p>
             </div>
 
             {/* Spinner only - no progress bar */}
             <div className="w-16 h-16 border-4 border-[#ae67c7]/30 border-t-[#b3f100] rounded-full animate-spin mb-6 mx-auto"></div>
-
-            <p className="text-[#ae67c7] text-sm">
-              {preloadStatus || "Initializing Spline..."}
-            </p>
           </div>
         </div>
       )}

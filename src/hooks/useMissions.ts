@@ -56,6 +56,40 @@ export function useMissions() {
   const trackKeyCombo = useCallback((keys: string[]) => {
     console.log(`⌨️ Key combo detected:`, keys);
     
+    // Traitement spécial pour discovery_modal_opened
+    if (keys.includes('discovery_modal_opened')) {
+      console.log("🎯 Marking Discovery Arcade progress");
+      
+      const updatedState = MissionStorage.updateMissionProgress(
+        `discovery_arcade_${missionsState.currentDate}`,
+        (mission) => {
+          if (mission.completed) {
+            console.log("⚠️ Discovery Arcade already completed today");
+            return mission;
+          }
+          
+          console.log("✅ Discovery Arcade completed!");
+          return {
+            ...mission,
+            current: 1,
+            completed: true,
+            completedCombos: [['discovery_modal_opened']],
+          };
+        }
+      );
+      
+      setMissionsState(updatedState);
+      
+      // Forcer la synchronisation UI
+      window.dispatchEvent(new StorageEvent('storage', { 
+        key: 'sherlock_daily_missions',
+        newValue: JSON.stringify(updatedState)
+      }));
+      
+      console.log("🎯 Discovery Arcade mission completed!");
+      return;
+    }
+    
     // Traitement spécial pour cube_modal_opened
     if (keys.includes('cube_modal_opened')) {
       console.log("🎯 Marking Cube Activator progress");
@@ -189,6 +223,12 @@ export function useMissions() {
     
     setMissionsState(updatedState);
     
+    // Forcer la synchronisation UI via synthetic storage event
+    window.dispatchEvent(new StorageEvent('storage', { 
+      key: 'sherlock_daily_missions',
+      newValue: JSON.stringify(updatedState)
+    }));
+    
     // NOUVEAU: donner 1 cube pour cette mission
     console.log("🎯 Daily check-in completed! Awarding 1 cube");
     return { giveCube: true, reason: 'daily_checkin' };
@@ -217,6 +257,12 @@ export function useMissions() {
     );
     
     setMissionsState(updatedState);
+    
+    // Forcer la synchronisation UI via synthetic storage event
+    window.dispatchEvent(new StorageEvent('storage', { 
+      key: 'sherlock_daily_missions',
+      newValue: JSON.stringify(updatedState)
+    }));
     
     // NOUVEAU: donner 1 cube pour cette mission
     console.log("🎯 Cube Master completed! Awarding 1 cube");
