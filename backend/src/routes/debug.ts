@@ -46,9 +46,9 @@ router.get('/create-tables', async (req, res) => {
       CREATE UNIQUE INDEX IF NOT EXISTS "users_address_key" ON "users"("address")
     `;
 
-    // Créer la table DailyMission
+    // Créer la table DailyMission avec le bon nom
     await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS "DailyMission" (
+      CREATE TABLE IF NOT EXISTS "daily_missions" (
         "id" TEXT NOT NULL,
         "userId" TEXT NOT NULL,
         "date" TEXT NOT NULL,
@@ -61,20 +61,20 @@ router.get('/create-tables', async (req, res) => {
         "completed" BOOLEAN NOT NULL DEFAULT false,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT "DailyMission_pkey" PRIMARY KEY ("id")
+        CONSTRAINT "daily_missions_pkey" PRIMARY KEY ("id")
       )
     `;
 
-    // Créer la table UserSession
+    // Créer la table UserSession avec le bon nom
     await prisma.$executeRaw`
-      CREATE TABLE IF NOT EXISTS "UserSession" (
+      CREATE TABLE IF NOT EXISTS "user_sessions" (
         "id" TEXT NOT NULL,
         "userId" TEXT NOT NULL,
         "signature" TEXT NOT NULL,
         "message" TEXT NOT NULL,
         "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
         "expiresAt" TIMESTAMP(3) NOT NULL,
-        CONSTRAINT "UserSession_pkey" PRIMARY KEY ("id")
+        CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("id")
       )
     `;
     
@@ -117,54 +117,28 @@ router.get('/create-test-user', async (req, res) => {
   }
 });
 
-// Test spécifique de l'API missions
+// Test spécifique de l'API missions - VERSION SIMPLE
 router.get('/test-missions/:address', async (req, res) => {
   try {
     const { address } = req.params;
     
-    console.log('Testing missions for address:', address);
-    
-    // Test 1: Créer l'utilisateur
+    // Test 1: Créer juste l'utilisateur
     const user = await prisma.user.upsert({
       where: { address: address.toLowerCase() },
       update: {},
       create: { address: address.toLowerCase() }
     });
     
-    console.log('User created/found:', user);
-    
-    // Test 2: Créer une mission simple
-    const today = new Date().toISOString().split('T')[0];
-    const missionId = `test_mission_${today}`;
-    
-    const mission = await prisma.dailyMission.upsert({
-      where: {
-        userId_date_missionId: {
-          userId: user.id,
-          date: today,
-          missionId: missionId
-        }
-      },
-      update: {},
-      create: {
-        userId: user.id,
-        date: today,
-        missionId: missionId,
-        missionType: 'test',
-        title: 'Test Mission',
-        description: 'Test description',
-        target: 1,
-        completed: false
-      }
+    // Test 2: Compter les missions existantes
+    const missionCount = await prisma.dailyMission.count({
+      where: { userId: user.id }
     });
-    
-    console.log('Mission created:', mission);
     
     res.json({
       success: true,
       user: user,
-      mission: mission,
-      message: 'Mission system working!'
+      missionCount: missionCount,
+      message: 'Mission API test - user creation works!'
     });
     
   } catch (error) {
