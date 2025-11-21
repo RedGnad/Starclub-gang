@@ -127,6 +127,9 @@ function SplinePage() {
     refresh: refreshSuperDApps,
   } = useSuperDApps();
   const {
+    missions,
+    completed,
+    streak,
     missionTriggered,
     activeMission,
     triggerCubeMission,
@@ -137,6 +140,8 @@ function SplinePage() {
     completeDailyCheckin,
     markCubeCompleted,
     checkAllMissionsCompleted,
+    getAvailableRewards,
+    claimRewards,
   } = useMissions(address); // On passera l'adresse, le hook gère si elle est undefined
 
   // Forcer un refresh des SuperDApps au montage pour avoir les nouvelles dApps
@@ -1132,7 +1137,11 @@ function SplinePage() {
       {/* Spline plein écran */}
       <Spline
         scene="https://prod.spline.design/eUR0ZkHlU2oliRLX/scene.splinecode"
-        onLoad={onLoad}
+        onLoad={handleSplineLoad}
+        onError={(error) => {
+          console.error("🚨 Spline failed to load:", error);
+          setSplineLoaded(true); // Continuer même si Spline fail
+        }}
         renderOnDemand={false}
         style={{
           width: "100vw",
@@ -1343,7 +1352,11 @@ function SplinePage() {
       {/* MissionPanel */}
       <MissionPanel
         isOpen={missionsOpen}
-        userAddress={address}
+        missions={missions}
+        completed={completed}
+        streak={streak}
+        availableRewards={getAvailableRewards()}
+        onClaimMissionRewards={claimRewards}
         onClose={() => {
           console.log(
             "🎯 Mission modal closing - executing universal sequence M→C→Y"
@@ -1451,9 +1464,7 @@ function SplinePage() {
       )}
 
       {/* Cube Limit Indicator - discrète en haut à droite */}
-      <CubeLimitIndicator
-        userAddress={signed && isAuthenticated ? address : undefined}
-      />
+      <CubeLimitIndicator userAddress={address} />
     </div>
   );
 }

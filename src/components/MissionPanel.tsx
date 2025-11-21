@@ -1,5 +1,4 @@
 import React from "react";
-import { useMissions } from "../hooks/useMissions";
 import type { AnyMission } from "../types/missions";
 
 interface MissionPanelProps {
@@ -7,7 +6,12 @@ interface MissionPanelProps {
   onClose: () => void;
   onDailyCheckin: () => void;
   onClaimRewards: (cubes: number) => void;
-  userAddress?: string; // Ajout de l'adresse utilisateur
+  // Données des missions passées depuis le parent
+  missions: AnyMission[];
+  completed: boolean;
+  streak: number;
+  availableRewards: number;
+  onClaimMissionRewards: () => void;
 }
 
 const DailyCheckinItem: React.FC<{
@@ -22,12 +26,14 @@ const DailyCheckinItem: React.FC<{
   return (
     <div
       style={{
-        backgroundColor: "#0D001D",
-        border: `1px solid ${mission.completed ? "#b3f100" : "#ae67c7"}`, // Vert si complété, violet sinon
-        borderRadius: "12px",
+        margin: "8px 20px",
         padding: "16px",
-        margin: "12px 20px",
-        transition: "all 0.3s ease",
+        backgroundColor: "#0D001D",
+        border: mission.completed ? "2px solid #b3f100" : "2px solid #ae67c7",
+        borderRadius: "12px",
+        boxShadow: mission.completed
+          ? "0 4px 20px rgba(179, 241, 0, 0.3)"
+          : "0 2px 10px rgba(174, 103, 199, 0.2)",
       }}
     >
       <div
@@ -35,108 +41,79 @@ const DailyCheckinItem: React.FC<{
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "8px",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <h3
+        <div style={{ flex: 1 }}>
+          <h4
             style={{
               margin: 0,
               fontSize: "14px",
-              fontWeight: "600",
-              color: mission.completed ? "#b3f100" : "#ffffff", // Vert si complété
-            }}
-          >
-            {mission.title}
-          </h3>
-          <span
-            style={{
-              backgroundColor: mission.completed ? "#b3f100" : "#ae67c7",
-              color: "#0D001D",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontSize: "10px",
+              color: mission.completed ? "#b3f100" : "#ffffff",
               fontWeight: "bold",
             }}
           >
-            {mission.current}/{mission.target}
-            {mission.completed && "✓"}
-          </span>
-        </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          {!mission.completed && (
-            <button
-              onClick={onCheckin}
-              style={{
-                background: "#f19300", // Orange de ta charte
-                border: "none",
-                borderRadius: "6px",
-                color: "#0D001D", // Texte sombre pour contraste
-                padding: "6px 12px",
-                fontSize: "11px",
-                fontWeight: "600",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "#ff9f1a"; // Orange plus clair au hover
-                e.currentTarget.style.transform = "scale(1.05)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#f19300";
-                e.currentTarget.style.transform = "scale(1)";
-              }}
-            >
-              Check-in
-            </button>
-          )}
-          {mission.completed && (
+            {mission.title}
+          </h4>
+          <p
+            style={{
+              margin: "4px 0 8px 0",
+              fontSize: "12px",
+              color: "#ae67c7",
+            }}
+          >
+            {mission.description}
+          </p>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <span
               style={{
-                color: "#b3f100", // Vert lime
-                fontSize: "16px",
+                fontSize: "12px",
+                color: mission.completed ? "#b3f100" : "#ae67c7",
+                fontWeight: "bold",
               }}
             >
-              ✓
+              {mission.current}/{mission.target}
             </span>
-          )}
+            {!mission.completed && (
+              <button
+                onClick={onCheckin}
+                style={{
+                  background: "#f19300",
+                  border: "2px solid #b3f100",
+                  borderRadius: "8px",
+                  color: "#0D001D",
+                  padding: "6px 12px",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                }}
+              >
+                Check In
+              </button>
+            )}
+          </div>
         </div>
       </div>
-      <p
-        style={{
-          margin: "0 0 8px 0",
-          color: "#ae67c7", // Violet pour la description
-          fontSize: "12px",
-        }}
-      >
-        {mission.description}
-      </p>
+      {/* Progress bar */}
       <div
         style={{
-          width: "100%",
+          marginTop: "8px",
           height: "4px",
-          backgroundColor: "#1a0033", // Fond de la barre de progression
+          backgroundColor: "#ae67c7",
           borderRadius: "2px",
           overflow: "hidden",
         }}
       >
         <div
           style={{
-            width: `${progressPercentage}%`,
             height: "100%",
-            backgroundColor: mission.completed ? "#b3f100" : "#f19300", // Vert si complété, orange sinon
+            width: `${progressPercentage}%`,
+            backgroundColor: mission.completed ? "#b3f100" : "#f19300",
             transition: "width 0.3s ease",
           }}
         />
@@ -154,12 +131,14 @@ const MissionItem: React.FC<{ mission: AnyMission }> = ({ mission }) => {
   return (
     <div
       style={{
-        backgroundColor: "#0D001D",
-        border: `1px solid ${mission.completed ? "#b3f100" : "#ae67c7"}`,
-        borderRadius: "12px",
+        margin: "8px 20px",
         padding: "16px",
-        margin: "12px 20px",
-        transition: "all 0.3s ease",
+        backgroundColor: "#0D001D",
+        border: mission.completed ? "2px solid #b3f100" : "2px solid #ae67c7",
+        borderRadius: "12px",
+        boxShadow: mission.completed
+          ? "0 4px 20px rgba(179, 241, 0, 0.3)"
+          : "0 2px 10px rgba(174, 103, 199, 0.2)",
       }}
     >
       <div
@@ -167,73 +146,68 @@ const MissionItem: React.FC<{ mission: AnyMission }> = ({ mission }) => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: "8px",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <h3
+        <div style={{ flex: 1 }}>
+          <h4
             style={{
               margin: 0,
               fontSize: "14px",
-              fontWeight: "600",
               color: mission.completed ? "#b3f100" : "#ffffff",
+              fontWeight: "bold",
             }}
           >
             {mission.title}
-          </h3>
+          </h4>
+          <p
+            style={{
+              margin: "4px 0 8px 0",
+              fontSize: "12px",
+              color: "#ae67c7",
+            }}
+          >
+            {mission.description}
+          </p>
           <span
             style={{
-              backgroundColor: mission.completed ? "#b3f100" : "#ae67c7",
-              color: "#0D001D",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              fontSize: "10px",
+              fontSize: "12px",
+              color: mission.completed ? "#b3f100" : "#ae67c7",
               fontWeight: "bold",
             }}
           >
             {mission.current}/{mission.target}
-            {mission.completed && "✓"}
           </span>
         </div>
         {mission.completed && (
-          <span
+          <div
             style={{
-              color: "#b3f100",
-              fontSize: "16px",
+              background: "#b3f100",
+              borderRadius: "50%",
+              width: "24px",
+              height: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
-            ✓
-          </span>
+            <span style={{ color: "#0D001D", fontSize: "14px" }}>✓</span>
+          </div>
         )}
       </div>
-      <p
-        style={{
-          margin: "0 0 8px 0",
-          color: "#ae67c7",
-          fontSize: "12px",
-        }}
-      >
-        {mission.description}
-      </p>
+      {/* Progress bar */}
       <div
         style={{
-          width: "100%",
+          marginTop: "8px",
           height: "4px",
-          backgroundColor: "#1a0033",
+          backgroundColor: "#ae67c7",
           borderRadius: "2px",
           overflow: "hidden",
         }}
       >
         <div
           style={{
-            width: `${progressPercentage}%`,
             height: "100%",
+            width: `${progressPercentage}%`,
             backgroundColor: mission.completed ? "#b3f100" : "#f19300",
             transition: "width 0.3s ease",
           }}
@@ -248,12 +222,12 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
   onClose,
   onDailyCheckin,
   onClaimRewards,
-  userAddress,
+  missions,
+  completed,
+  streak,
+  availableRewards,
+  onClaimMissionRewards,
 }) => {
-  const { missions, completed, streak, getAvailableRewards, claimRewards } =
-    useMissions(userAddress);
-  const rewards = getAvailableRewards();
-
   if (!isOpen) return null;
 
   return (
@@ -264,126 +238,91 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: "rgba(13, 0, 29, 0.85)", // Plus de transparence pour voir le blur
-        backdropFilter: "blur(15px)", // LIQUID GLASS EFFECT
-        WebkitBackdropFilter: "blur(15px)", // Support Safari
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
         display: "flex",
-        justifyContent: "center",
         alignItems: "center",
+        justifyContent: "center",
         zIndex: 1000,
-        padding: "20px",
       }}
     >
       <div
         style={{
-          backgroundColor: "#0D001D",
-          border: "2px solid #b3f100",
-          borderRadius: "16px",
-          width: "100%",
-          maxWidth: "480px",
-          maxHeight: "90vh",
+          width: "90%",
+          maxWidth: "600px",
+          maxHeight: "80vh",
+          backgroundColor: "#1a1a2e",
+          borderRadius: "20px",
+          border: "3px solid #ae67c7",
+          boxShadow: "0 8px 32px rgba(174, 103, 199, 0.3)",
           overflow: "hidden",
-          boxShadow: "0 20px 40px rgba(179, 241, 0, 0.2)",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* Header */}
         <div
           style={{
-            padding: "20px 24px",
-            borderBottom: "1px solid #ae67c7",
-            background: "#0D001D",
+            padding: "20px",
+            borderBottom: "2px solid #ae67c7",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "18px",
-                  fontWeight: "bold",
-                  color: "#b3f100",
-                }}
-              >
-                Daily Missions
-              </h2>
-              <p
-                style={{
-                  margin: "4px 0 0 0",
-                  fontSize: "12px",
-                  color: "#ae67c7",
-                }}
-              >
-                Streak: {streak} day{streak > 1 ? "s" : ""} •{" "}
-                {missions.filter((m) => m.completed).length}/{missions.length}{" "}
-                completed
-              </p>
-            </div>
-            <button
-              onClick={onClose}
+          <div>
+            <h2
               style={{
-                background: "#ae67c7",
-                border: "none",
-                borderRadius: "8px",
-                color: "#0D001D",
-                padding: "8px 12px",
-                fontSize: "12px",
+                margin: 0,
+                fontSize: "20px",
+                color: "#b3f100",
                 fontWeight: "bold",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = "#b87fd1";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = "#ae67c7";
               }}
             >
-              Close
-            </button>
+              Daily Missions
+            </h2>
+            <p
+              style={{
+                margin: "4px 0 0 0",
+                fontSize: "14px",
+                color: "#ae67c7",
+              }}
+            >
+              Streak: {streak} day{streak !== 1 ? "s" : ""} •{" "}
+              {missions.filter((m) => m.completed).length}/{missions.length}{" "}
+              completed
+            </p>
           </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: "transparent",
+              border: "2px solid #ae67c7",
+              borderRadius: "10px",
+              color: "#ae67c7",
+              padding: "8px 16px",
+              fontSize: "14px",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            Close
+          </button>
         </div>
 
-        {/* Global Status */}
-        {completed && (
-          <div
-            style={{
-              background: "#0D001D",
-              border: "1px solid #b3f100", // Vert lime pour le succès
-              borderRadius: "8px",
-              padding: "12px",
-              margin: "16px 20px",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: "24px", marginBottom: "4px" }}>✓</div>
-            <div
-              style={{
-                color: "#b3f100", // Vert lime pour le texte de succès
-                fontWeight: "600",
-                fontSize: "14px",
-              }}
-            >
-              All missions completed!
-            </div>
-            <div
-              style={{ color: "#ae67c7", fontSize: "12px", marginTop: "4px" }}
-            >
-              Come back tomorrow for new missions
-            </div>
-          </div>
-        )}
-
-        {/* Liste des missions */}
-        <div>
+        {/* Missions List */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "12px 0",
+          }}
+        >
           {missions.map((mission) => {
-            // Utiliser le composant spécial pour Daily Check-in
-            if (mission.id.includes("daily_checkin")) {
+            // Composant spécial pour Daily Check-in avec bouton
+            if (
+              mission.type === "key_combo" &&
+              mission.title === "Daily Check-in"
+            ) {
               return (
                 <DailyCheckinItem
                   key={mission.id}
@@ -398,15 +337,15 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
         </div>
 
         {/* Claim Rewards Section */}
-        {rewards.totalCubes > 0 && (
+        {availableRewards > 0 && (
           <div
             style={{
               margin: "16px 20px",
               padding: "16px",
               backgroundColor: "#0D001D",
-              border: "2px solid #b3f100", // Bordure vert lime
+              border: "2px solid #b3f100",
               borderRadius: "12px",
-              boxShadow: "0 4px 20px rgba(179, 241, 0, 0.3)", // Ombre verte
+              boxShadow: "0 4px 20px rgba(179, 241, 0, 0.3)",
             }}
           >
             <div
@@ -434,22 +373,17 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
                     color: "#ae67c7",
                   }}
                 >
-                  {rewards.totalCubes} cube{rewards.totalCubes > 1 ? "s" : ""}{" "}
-                  to claim
+                  {availableRewards} cube{availableRewards > 1 ? "s" : ""} to
+                  claim
                 </p>
               </div>
               <button
-                onClick={() => {
-                  const cubesClaimed = claimRewards();
-                  if (cubesClaimed > 0) {
-                    onClaimRewards(cubesClaimed);
-                  }
-                }}
+                onClick={onClaimMissionRewards}
                 style={{
-                  background: "#f19300", // Orange de ta charte
-                  border: "2px solid #b3f100", // Bordure vert lime
+                  background: "#f19300",
+                  border: "2px solid #b3f100",
                   borderRadius: "10px",
-                  color: "#0D001D", // Texte sombre
+                  color: "#0D001D",
                   padding: "10px 20px",
                   fontSize: "13px",
                   fontWeight: "bold",
@@ -457,15 +391,12 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
                   transition: "all 0.3s ease",
                 }}
                 onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ff9f1a"; // Orange plus clair
+                  e.currentTarget.style.backgroundColor = "#ff9f1a";
                   e.currentTarget.style.transform = "scale(1.05)";
-                  e.currentTarget.style.boxShadow =
-                    "0 4px 15px rgba(241, 147, 0, 0.4)";
                 }}
                 onMouseOut={(e) => {
                   e.currentTarget.style.backgroundColor = "#f19300";
                   e.currentTarget.style.transform = "scale(1)";
-                  e.currentTarget.style.boxShadow = "none";
                 }}
               >
                 Claim Rewards
@@ -479,9 +410,9 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
           style={{
             margin: "16px 20px 20px 20px",
             paddingTop: "16px",
-            borderTop: "1px solid #ae67c7", // Bordure violet
+            borderTop: "1px solid #ae67c7",
             fontSize: "11px",
-            color: "#ae67c7", // Texte violet
+            color: "#ae67c7",
             textAlign: "center",
           }}
         >
