@@ -266,65 +266,24 @@ function SplinePage() {
     async (missions: any[]) => {
       console.log("🔍 DEBUG triggerCubeMissionWithLimit:", {
         address,
-        signed,
-        isAuthenticated,
+        isConnected,
       });
 
-      if (!address || !signed || !isAuthenticated) {
-        console.log("⚠️ User not authenticated, skipping cube limit check");
-        console.log(
-          "🔍 DEBUG: address:",
-          address,
-          "signed:",
-          signed,
-          "isAuthenticated:",
-          isAuthenticated
-        );
-        // UTILISER L'ADRESSE MÊME SI PAS TOUS LES FLAGS SONT VRAIS
+      if (!address || !isConnected) {
+        console.log("⚠️ User not connected, using address anyway");
+        console.log("🔍 DEBUG: address:", address, "isConnected:", isConnected);
+      }
+
+      // TOUJOURS utiliser l'address si elle existe
+      if (address) {
         triggerCubeMission(missions, address);
         return;
       }
 
-      try {
-        // Vérifier les limites
-        const limitResponse = await CubeLimitAPI.getLimitStatus(address);
-
-        if (!limitResponse.success || !limitResponse.data?.canOpen) {
-          console.log("🚫 Daily cube limit reached (25/25)");
-          alert(
-            "You have reached your daily cube opening limit (25/25). Come back tomorrow!"
-          );
-          return;
-        }
-
-        // Incrémenter le compteur
-        const incrementResponse = await CubeLimitAPI.incrementOpens(address);
-
-        if (incrementResponse.success) {
-          console.log(
-            `✅ Cube opened: ${incrementResponse.data?.cubeOpensToday}/${incrementResponse.data?.limit}`
-          );
-
-          // Déclencher la mission
-          triggerCubeMission(missions, address);
-
-          // Refresh l'UI du compteur
-          if ((window as any).refreshCubeLimit) {
-            (window as any).refreshCubeLimit();
-          }
-        } else {
-          console.error(
-            "❌ Failed to increment cube opens:",
-            incrementResponse.error
-          );
-          triggerCubeMission(missions); // Permettre quand même en cas d'erreur API
-        }
-      } catch (error) {
-        console.error("❌ Error checking cube limits:", error);
-        triggerCubeMission(missions); // Permettre en cas d'erreur réseau
-      }
+      // Si pas d'address, abandonner
+      console.log("❌ No address available for cube mission");
     },
-    [address, signed, isAuthenticated, triggerCubeMission]
+    [address, isConnected, triggerCubeMission]
   );
   const [mounted, setMounted] = React.useState(false);
   const [nearArcadeMachine, setNearArcadeMachine] = React.useState(false);

@@ -181,17 +181,12 @@ router.post('/:address/daily-checkin', async (req, res) => {
       });
     }
     
-    // 3. Transaction : Créer/Mettre à jour daily check-in + Ajouter cube
+    // 3. Transaction : Créer daily check-in + Ajouter cube
     const result = await prisma.$transaction(async (tx) => {
-      // Mettre à jour ou créer la mission daily check-in
+      // Créer la mission daily check-in (pas besoin de ON CONFLICT car on a déjà vérifié)
       await tx.$executeRaw`
         INSERT INTO daily_missions ("userId", "missionId", date, title, description, target, progress, completed, "missionType", "createdAt", "updatedAt")
         VALUES (${userId}, ${'daily_checkin_' + today}, ${today}, 'Daily Check-in', 'Connect and open the application', 1, 1, true, 'daily_checkin', NOW(), NOW())
-        ON CONFLICT ("userId", "missionId", date) 
-        DO UPDATE SET 
-          progress = 1, 
-          completed = true, 
-          "updatedAt" = NOW()
       `;
       
       // Ajouter 1 cube
