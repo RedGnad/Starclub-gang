@@ -131,8 +131,17 @@ export function useMissions(userAddress?: string) {
   const [missionTriggered, setMissionTriggered] = useState(false);
   const [activeMission, setActiveMission] = useState<any>(null);
 
-  const triggerCubeMission = useCallback((superDapps: any[]) => {
+  const triggerCubeMission = useCallback((superDapps: any[], passedAddress?: string) => {
     console.log('🔍 DEBUG triggerCubeMission called with:', superDapps);
+    console.log('🔍 DEBUG: userAddress:', userAddress, 'passedAddress:', passedAddress);
+    
+    const effectiveAddress = passedAddress || userAddress;
+    
+    if (!effectiveAddress) {
+      console.error('❌ Cannot trigger cube mission without user address');
+      return;
+    }
+    
     if (superDapps.length === 0) {
       console.log('🔍 DEBUG: superDapps.length === 0, returning early');
       return;
@@ -146,12 +155,30 @@ export function useMissions(userAddress?: string) {
     
     // NOUVEAU: Tracker l'ouverture du modal cube pour la mission "Cube Activator"
     console.log('📊 Tracking cube modal opened for mission progress...');
-    trackKeyCombo(['cube_modal_opened']);
+    
+    // Appeler updateMissionProgress directement avec l'adresse effective
+    if (effectiveAddress) {
+      console.log('🔍 DEBUG: Calling updateMissionProgress directly with address:', effectiveAddress);
+      const today = new Date().toISOString().split('T')[0];
+      // Créer une fonction temporaire pour bypasser la vérification d'adresse
+      MissionsAPI.updateMissionProgress(effectiveAddress, `cube_activations_${today}`, 1)
+        .then((response) => {
+          if (response.success) {
+            console.log('✅ Cube mission progress updated successfully');
+            loadMissions(); // Reload missions to get updated state
+          } else {
+            console.error('❌ Failed to update cube mission progress:', response.error);
+          }
+        })
+        .catch((err) => {
+          console.error('❌ Error updating cube mission progress:', err);
+        });
+    }
     
     setActiveMission(randomDapp);
     setMissionTriggered(true);
     console.log('🔍 DEBUG: triggerCubeMission completed successfully');
-  }, [trackKeyCombo]);
+  }, [userAddress, loadMissions]);
 
   const resetMission = useCallback(() => {
     setMissionTriggered(false);

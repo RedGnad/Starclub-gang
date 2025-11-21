@@ -266,7 +266,7 @@ function SplinePage() {
     async (missions: any[]) => {
       if (!address || !signed || !isAuthenticated) {
         console.log("⚠️ User not authenticated, skipping cube limit check");
-        triggerCubeMission(missions);
+        triggerCubeMission(missions, address);
         return;
       }
 
@@ -291,7 +291,7 @@ function SplinePage() {
           );
 
           // Déclencher la mission
-          triggerCubeMission(missions);
+          triggerCubeMission(missions, address);
 
           // Refresh l'UI du compteur
           if ((window as any).refreshCubeLimit) {
