@@ -1,0 +1,93 @@
+const BACKEND_BASE_URL = (import.meta as any).env?.VITE_BACKEND_URL || "https://starclub-backend.onrender.com";
+
+export interface APIMissionResponse {
+  success: boolean;
+  data?: {
+    currentDate: string;
+    missions: any[];
+    completed: boolean;
+    streak: number;
+    lastCompletedDate?: string;
+  };
+  error?: string;
+}
+
+export interface MissionProgressResponse {
+  success: boolean;
+  data?: {
+    mission: any;
+    justCompleted?: boolean;
+    alreadyCompleted?: boolean;
+  };
+  error?: string;
+}
+
+export class MissionsAPI {
+  private static async request(endpoint: string, options: RequestInit = {}): Promise<any> {
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error(`API Request failed [${endpoint}]:`, error);
+      throw error;
+    }
+  }
+
+  // Récupérer les missions d'un utilisateur
+  static async getUserMissions(address: string): Promise<APIMissionResponse> {
+    return this.request(`/api/missions/${address}`);
+  }
+
+  // Mettre à jour le progrès d'une mission
+  static async updateMissionProgress(
+    address: string, 
+    missionId: string, 
+    increment: number = 1
+  ): Promise<MissionProgressResponse> {
+    return this.request(`/api/missions/${address}/progress`, {
+      method: 'POST',
+      body: JSON.stringify({ missionId, increment }),
+    });
+  }
+
+  // Helper: marquer une mission comme complétée
+  static async completeMission(address: string, missionId: string): Promise<MissionProgressResponse> {
+    // Récupérer d'abord la mission pour connaître son target
+    const missionsResponse = await this.getUserMissions(address);
+    if (!missionsResponse.success || !missionsResponse.data) {
+      throw new Error('Failed to get user missions');
+    }
+
+    const mission = missionsResponse.data.missions.find(m => m.id === missionId);
+    if (!mission) {
+      throw new Error('Mission not found');
+    }
+
+    // Mettre à jour le progrès pour compléter la mission
+    const remainingProgress = mission.target - mission.current;
+    if (remainingProgress > 0) {
+      return this.updateMissionProgress(address, missionId, remainingProgress);
+    }
+
+    return {
+      success: true,
+      data: {
+        mission,
+        alreadyCompleted: true
+      }
+    };
+  }
+}

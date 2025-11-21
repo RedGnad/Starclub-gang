@@ -1,9 +1,7 @@
 import { Router } from 'express';
+import { prisma, getOrCreateUser } from '../services/database.js';
 
 const router = Router();
-
-// Stockage temporaire en mémoire (en attendant la vraie DB)
-const userCubes = new Map<string, number>();
 
 // GET /api/cubes/:address - Récupérer les cubes d'un utilisateur
 router.get('/:address', async (req, res) => {
@@ -17,14 +15,14 @@ router.get('/:address', async (req, res) => {
       });
     }
 
-    const cubes = userCubes.get(address.toLowerCase()) || 0;
+    const user = await getOrCreateUser(address);
     
     res.json({
       success: true,
       data: {
-        address: address.toLowerCase(),
-        cubes,
-        lastUpdated: new Date()
+        address: user.address,
+        cubes: user.cubes,
+        lastUpdated: user.updatedAt
       }
     });
 
@@ -49,21 +47,23 @@ router.post('/:address/increment', async (req, res) => {
       });
     }
 
-    const normalizedAddress = address.toLowerCase();
-    const currentCubes = userCubes.get(normalizedAddress) || 0;
-    const newCubes = currentCubes + 1;
+    const user = await getOrCreateUser(address);
     
-    userCubes.set(normalizedAddress, newCubes);
+    // Incrémenter les cubes dans la database
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: { cubes: user.cubes + 1 }
+    });
     
-    console.log(`🎲 Cube earned! ${normalizedAddress}: ${currentCubes} -> ${newCubes}`);
+    console.log(`🎲 Cube earned! ${user.address}: ${user.cubes} -> ${updatedUser.cubes}`);
     
     res.json({
       success: true,
       data: {
-        address: normalizedAddress,
-        cubes: newCubes,
+        address: updatedUser.address,
+        cubes: updatedUser.cubes,
         increment: 1,
-        lastUpdated: new Date()
+        lastUpdated: updatedUser.updatedAt
       }
     });
 
@@ -79,16 +79,25 @@ router.post('/:address/increment', async (req, res) => {
 // GET /api/cubes - Leaderboard des cubes (top 10)
 router.get('/', async (req, res) => {
   try {
-    const leaderboard = Array.from(userCubes.entries())
-      .map(([address, cubes]) => ({ address, cubes }))
-      .sort((a, b) => b.cubes - a.cubes)
-      .slice(0, 10);
+    const leaderboard = await prisma.user.findMany({
+      where: { cubes: { gt: 0 } },
+      orderBy: { cubes: 'desc' },
+      take: 10,
+      select: {
+        address: true,
+        cubes: true
+      }
+    });
+    
+    const total = await prisma.user.count({
+      where: { cubes: { gt: 0 } }
+    });
     
     res.json({
       success: true,
       data: {
         leaderboard,
-        total: userCubes.size
+        total
       }
     });
 

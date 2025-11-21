@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 // Import des routes
 import { setupApiRoutes } from './routes/index.js';
+import { connectDatabase } from './services/database.js';
 
 // Configuration
 dotenv.config();
@@ -60,11 +61,24 @@ app.get('/health', (req, res) => {
 // Setup des routes API
 setupApiRoutes(app);
 
-// Démarrage serveur
-app.listen(PORT, () => {
-  console.log(`🚀 Starclub Backend COMPLET sur http://localhost:${PORT}`);
-  console.log(`📡 CORS autorisé pour http://localhost:3000`);
-  console.log(`🔥 Mode: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`💾 Database: ${process.env.DATABASE_URL || 'sqlite://./dev.db'}`);
-  console.log(`🔗 BlockVision: ${process.env.BLOCKVISION_API_KEY ? '✅' : '❌'}`);
-});
+// Initialisation database et démarrage serveur
+async function startServer() {
+  try {
+    // Connecter à la database
+    await connectDatabase();
+    
+    // Démarrer le serveur
+    app.listen(PORT, () => {
+      console.log(`🚀 Starclub Backend COMPLET sur http://localhost:${PORT}`);
+      console.log(`📡 CORS autorisé pour http://localhost:3000`);
+      console.log(`🔥 Mode: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`💾 Database: ${process.env.DATABASE_URL || 'sqlite://./dev.db'}`);
+      console.log(`🔗 BlockVision: ${process.env.BLOCKVISION_API_KEY ? '✅' : '❌'}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

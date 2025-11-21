@@ -1126,21 +1126,23 @@ function SplinePage() {
       )} */}
 
       {/* Overlay buttons */}
-      {mounted && signed && (
+      {mounted && (
         <>
-          {/* Compteur de cubes en haut de l'écran - Affiché seulement après SIWE */}
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998]">
-            <div
-              className="bg-[#0D001D] backdrop-blur-xl border-2 border-[#b3f100] rounded-full px-6 py-3 shadow-2xl"
-              style={{ boxShadow: "0 8px 32px rgba(179, 241, 0, 0.3)" }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="text-[#b3f100] font-bold text-lg">
-                  {cubesEarned} Cube{cubesEarned !== 1 ? "s" : ""}
+          {/* Compteur de cubes - Affiché seulement après SIWE */}
+          {signed && (
+            <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9998]">
+              <div
+                className="bg-[#0D001D] backdrop-blur-xl border-2 border-[#b3f100] rounded-full px-6 py-3 shadow-2xl"
+                style={{ boxShadow: "0 8px 32px rgba(179, 241, 0, 0.3)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-[#b3f100] font-bold text-lg">
+                    {cubesEarned} Cube{cubesEarned !== 1 ? "s" : ""}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Bouton disconnect en haut à droite si connecté */}
           {isConnected && (
@@ -1194,33 +1196,34 @@ function SplinePage() {
               </div>
             </div>
           )}
-          {/* Bouton Connect Wallet en bas */}
-          <div
+        </>
+      )}
+
+      {/* Bouton Connect Wallet - Toujours visible si pas connecté */}
+      {mounted && !isConnected && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "30px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+          }}
+        >
+          <button
+            onClick={() => setModalOpen(true)}
             style={{
-              position: "absolute",
-              bottom: "30px",
-              left: "50%",
-              transform: "translateX(-50%)",
-              zIndex: 1000,
+              background: "rgba(0,0,0,0.8)",
+              color: "white",
+              border: "none",
+              padding: "12px 24px",
+              borderRadius: "25px",
+              cursor: "pointer",
             }}
           >
-            {!isConnected ? (
-              <button
-                onClick={() => setModalOpen(true)}
-                style={{
-                  background: "rgba(0,0,0,0.8)",
-                  color: "white",
-                  border: "none",
-                  padding: "12px 24px",
-                  borderRadius: "25px",
-                  cursor: "pointer",
-                }}
-              >
-                Connect Wallet
-              </button>
-            ) : null}
-          </div>
-        </>
+            Connect Wallet
+          </button>
+        </div>
       )}
 
       {/* LoginModal */}

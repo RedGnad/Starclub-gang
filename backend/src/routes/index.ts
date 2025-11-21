@@ -7,6 +7,7 @@ import { protocolsRoutes } from './protocols.js';
 import { adminRoutes } from './admin.js';
 import { cubesRoutes } from './cubes.js';
 import { sessionsRoutes } from './sessions.js';
+import { missionsRoutes } from './missions.js';
 
 export function setupApiRoutes(app: Express) {
   // Test route
@@ -21,7 +22,8 @@ export function setupApiRoutes(app: Express) {
         protocols: '✅',
         database: '✅',
         cubes: '✅',
-        sessions: '✅'
+        sessions: '✅',
+        missions: '✅'
       }
     });
   });
@@ -35,4 +37,5 @@ export function setupApiRoutes(app: Express) {
   app.use('/api/admin', adminRoutes);
   app.use('/api/cubes', cubesRoutes);
   app.use('/api/sessions', sessionsRoutes);
+  app.use('/api/missions', missionsRoutes);
 }
