@@ -130,11 +130,6 @@ function SplinePage() {
     triggerCubeMission,
     resetMission,
     trackPosition,
-    trackDappClick,
-    trackKeyCombo,
-    completeDailyCheckin,
-    markCubeCompleted,
-    checkAllMissionsCompleted,
   } = useMissions();
 
   // Forcer un refresh des SuperDApps au montage pour avoir les nouvelles dApps
@@ -202,16 +197,8 @@ function SplinePage() {
       setTimeout(() => {
         processNextMission();
       }, 500); // Petit délai pour laisser le temps aux states de se mettre à jour
-
-      // NOUVEAU: Marquer la mission quotidienne "Cube Master" comme complétée
-      console.log("🎯 Marking cube completion mission as completed");
-      const result = markCubeCompleted();
-      if (result.giveCube) {
-        console.log(`🎲 Mission ${result.reason} completed! Awarding 1 cube`);
-        incrementCubes(); // Donner le cube ici
-      }
     },
-    [processNextMission, markCubeCompleted, incrementCubes]
+    [processNextMission]
   );
 
   // Debug SuperDApps loading
@@ -933,6 +920,21 @@ function SplinePage() {
               if (activeVerifications.length > 0) {
                 console.log(
                   "� Verification en cours, ajout à la queue:",
+                  randomDapp.name
+                );
+                setMissionQueue((prev) => [...prev, randomDapp]);
+              } else {
+                console.log(
+                  "🚀 Démarrage direct de la mission:",
+                  randomDapp.name
+                );
+                setCurrentMission(randomDapp);
+                triggerCubeMission([randomDapp]);
+              }
+            } else {
+              console.log("❌ Aucune SuperDApp disponible");
+            }
+          }
         }
 
         // RÈGLE STRICTE avec stabilisation : Discovery accessible UNIQUEMENT si Sphere 5 OU Sphere 7 OU Sphere 8 est à y=-1000
@@ -1051,6 +1053,45 @@ function SplinePage() {
           padding: 0,
         }}
       />
+
+      {/* Debug Overlay - MASQUÉ SUR DEMANDE UTILISATEUR */}
+      {/* {mounted && process.env.NODE_ENV === "development" && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "10px",
+            right: "10px",
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.6)",
+            color: "white",
+            padding: "6px 10px",
+            borderRadius: "6px",
+            fontSize: "10px",
+            fontFamily: "monospace",
+            maxWidth: "400px",
+            textAlign: "left",
+            opacity: 0.7,
+            backdropFilter: "blur(4px)",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          <div style={{ fontWeight: "bold", marginBottom: "5px" }}>
+            🔍 Détection de proximité
+          </div>
+          <div>{debugInfo}</div>
+          {preloadStatus && (
+            <div
+              style={{ marginTop: "3px", fontSize: "10px", color: "#60a5fa" }}
+            >
+              {preloadStatus}
+            </div>
+          )}
+          <div style={{ marginTop: "5px", fontSize: "10px", opacity: 0.7 }}>
+            Distance Event → Sphere 5 → Modal Discovery
+          </div>
+        </div>
+      )} */}
+
       {/* Overlay buttons */}
       {mounted && (
         <>
@@ -1145,6 +1186,7 @@ function SplinePage() {
           </div>
         </>
       )}
+
       {/* LoginModal */}
       <LoginModal
         open={modalOpen}
@@ -1176,6 +1218,7 @@ function SplinePage() {
           }, 1500);
         }}
       />
+
       {/* DiscoveryModal */}
       <DiscoveryModal
         isOpen={discoveryOpen}
@@ -1199,37 +1242,43 @@ function SplinePage() {
           }, 1000);
         }}
       />
+
       {/* MissionPanel */}
       <MissionPanel
         isOpen={missionsOpen}
         onClose={() => {
+          console.log(
+            "🎯 Mission modal closing - executing universal sequence M→C→Y"
+          );
           setMissionsOpen(false);
 
-          // Simuler relâchement de la bonne touche selon l'origine d'ouverture
-          if (missionsOpenedBy === "mission-chog") {
-            simulateKeyC();
-          } else if (missionsOpenedBy === "sphere-daily") {
+          // Séquence universelle de touches pour couvrir toutes les scènes
+          setTimeout(() => {
+            console.log("🎹 Simulating M key");
             simulateKeyM();
-          }
+          }, 100);
+
+          setTimeout(() => {
+            console.log("🎹 Simulating C key");
+            simulateKeyC();
+          }, 200);
+
+          setTimeout(() => {
+            console.log("🎹 Simulating Y key");
+            simulateKeyY();
+          }, 300);
 
           setMissionsOpenedBy(null);
         }}
         onDailyCheckin={() => {
           console.log("📅 Daily check-in triggered!");
-
-          // Utiliser la fonction du hook pour compléter la mission
-          const result = completeDailyCheckin();
-
-          // NOUVEAU: chaque mission donne 1 cube
-          if (result.giveCube) {
-            console.log(
-              `🎯 Mission ${result.reason} completed! Awarding 1 cube`
-            );
-            incrementCubes();
-          }
+          // TODO: Implémenter l'API de check-in quotidien
+          // Pour l'instant, juste un log et peut-être incrémenter les cubes
+          incrementCubes();
         }}
       />
-      /* ... */
+
+      {/* Mission Cube Modal */}
       <MissionModal
         isOpen={missionTriggered}
         onClose={() => {
@@ -1245,14 +1294,17 @@ function SplinePage() {
         onVerificationUpdate={onVerificationUpdate}
         onVerificationEnd={onVerificationEnd}
       />
+
       {/* Backend Test Panel - MASQUÉ SUR DEMANDE UTILISATEUR */}
       {/* {process.env.NODE_ENV === "development" && <BackendTest />} */}
+
       {/* Verification Tracker - Vérifications réelles + Queue */}
       <VerificationTracker
         verifications={activeVerifications}
         queue={missionQueue}
         completedVerifications={completedVerifications}
       />
+
       {/* Spline Loading Screen */}
       {!splineLoaded && (
         <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
