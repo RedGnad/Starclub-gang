@@ -1137,11 +1137,6 @@ function SplinePage() {
       {/* Spline plein écran */}
       <Spline
         scene="https://prod.spline.design/eUR0ZkHlU2oliRLX/scene.splinecode"
-        onLoad={handleSplineLoad}
-        onError={(error) => {
-          console.error("🚨 Spline failed to load:", error);
-          setSplineLoaded(true); // Continuer même si Spline fail
-        }}
         renderOnDemand={false}
         style={{
           width: "100vw",
