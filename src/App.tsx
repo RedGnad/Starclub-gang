@@ -176,7 +176,7 @@ function SplinePage() {
 
       return remainingQueue;
     });
-  }, [triggerCubeMissionWithLimit]);
+  }, []);
 
   const onVerificationEnd = React.useCallback(
     (verificationId: string) => {
