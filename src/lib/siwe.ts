@@ -17,7 +17,7 @@ export function buildSiweMessage(p: BuildSiweParams): string {
   const {
     domain,
     address,
-    statement = "Sign in to Sherlock",
+    statement = "Sign in to Starclub",
     uri,
     version = "1",
     chainId,
