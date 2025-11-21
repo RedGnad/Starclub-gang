@@ -190,6 +190,9 @@ export function useMissions(userAddress?: string) {
     );
     
     console.log('🔍 DEBUG daily mission found:', dailyMission);
+    console.log('🔍 DEBUG daily mission completed:', dailyMission?.completed);
+    console.log('🔍 DEBUG daily mission current:', dailyMission?.current);
+    console.log('🔍 DEBUG daily mission target:', dailyMission?.target);
     
     if (dailyMission && dailyMission.completed) {
       console.log("⚠️ Daily check-in already completed today!");

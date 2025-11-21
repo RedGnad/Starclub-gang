@@ -280,6 +280,7 @@ function SplinePage() {
           "isAuthenticated:",
           isAuthenticated
         );
+        // UTILISER L'ADRESSE MÊME SI PAS TOUS LES FLAGS SONT VRAIS
         triggerCubeMission(missions, address);
         return;
       }
