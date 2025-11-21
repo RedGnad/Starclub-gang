@@ -320,8 +320,8 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
           {missions.map((mission) => {
             // Composant spécial pour Daily Check-in avec bouton
             if (
-              mission.type === "key_combo" &&
-              mission.title === "Daily Check-in"
+              (mission as any).type === "daily_checkin" &&
+              (mission as any).title === "Daily Check-in"
             ) {
               return (
                 <DailyCheckinItem

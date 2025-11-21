@@ -84,6 +84,11 @@ export function useMissions(userAddress?: string) {
   const trackKeyCombo = useCallback((keys: string[]) => {
     console.log(`⌨️ Key combo detected:`, keys);
     
+    if (!userAddress) {
+      console.error('❌ Cannot track key combo without user address');
+      return null;
+    }
+    
     // Traitement spécial pour discovery_modal_opened
     if (keys.includes('discovery_modal_opened')) {
       console.log("🎯 Marking Discovery Arcade progress");
@@ -103,7 +108,7 @@ export function useMissions(userAddress?: string) {
     console.log(`⌨️ Key combo progress: ${keys}`);
     
     return null;
-  }, [missionsState.currentDate, updateMissionProgress]);
+  }, [userAddress, missionsState.currentDate, updateMissionProgress]);
 
   // Tracking des positions - Event Sphere Verif
   const trackPosition = useCallback((objectName: string, position: { x: number; y: number; z: number }) => {
