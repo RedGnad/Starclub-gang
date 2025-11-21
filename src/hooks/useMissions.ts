@@ -31,7 +31,7 @@ export function useMissions(userAddress?: string) {
       
       if (response.success && response.data) {
         console.log('✅ Missions loaded from API:', response.data);
-        setMissionsState(response.data);
+        setMissionsState(response.data as unknown as DailyMissionsState);
       } else {
         throw new Error(response.error || 'Failed to load missions');
       }
