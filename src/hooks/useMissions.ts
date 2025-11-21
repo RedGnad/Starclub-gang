@@ -33,10 +33,11 @@ export function useMissions(userAddress?: string) {
       
       if (response.success && response.data) {
         console.log('✅ Missions loaded from API:', response.data);
-      if (response.data.missions) {
-        console.log('🔍 DEBUG missions array:', response.data.missions);
-        console.log('🔍 DEBUG first mission:', response.data.missions[0]);
-      }
+        if (response.data && typeof response.data === 'object' && 'missions' in response.data) {
+          const dataWithMissions = response.data as { missions: any[] };
+          console.log('🔍 DEBUG missions array:', dataWithMissions.missions);
+          console.log('🔍 DEBUG first mission:', dataWithMissions.missions[0]);
+        }
         setMissionsState(response.data as unknown as DailyMissionsState);
       } else {
         throw new Error(response.error || 'Failed to load missions');
