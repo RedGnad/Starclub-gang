@@ -11,7 +11,7 @@ interface MissionPanelProps {
   completed: boolean;
   streak: number;
   availableRewards: number;
-  onClaimMissionRewards: () => void;
+  onClaimMissionRewards: () => number;
 }
 
 const DailyCheckinItem: React.FC<{
@@ -392,7 +392,10 @@ export const MissionPanel: React.FC<MissionPanelProps> = ({
                 </p>
               </div>
               <button
-                onClick={onClaimMissionRewards}
+                onClick={() => {
+                  const cubes = onClaimMissionRewards();
+                  onClaimRewards(cubes);
+                }}
                 style={{
                   background: "#f19300",
                   border: "2px solid #b3f100",

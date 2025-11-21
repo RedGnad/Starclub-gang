@@ -59,7 +59,7 @@ export function VerificationTracker({
     <div className="fixed top-20 right-4 z-[9997] max-w-xs">
       <div className="bg-black/80 backdrop-blur-sm border border-white/20 rounded-lg p-3 shadow-xl">
         <div className="text-white text-xs font-bold mb-2 flex items-center gap-2">
-          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+          <div className="w-2 h-2 rounded-full bg-[#ae67c7]"></div>
           Missions ({totalItems})
         </div>
 
@@ -75,16 +75,17 @@ export function VerificationTracker({
 
             // Couleurs selon l'état
             const borderColor = isCompleted
-              ? "border-yellow-400/60"
-              : "border-blue-400/30";
-            const dotColor = isCompleted ? "bg-yellow-400" : "bg-blue-400";
-            const progressColor = isCompleted ? "bg-yellow-400" : "bg-blue-400";
+              ? "border-[#b3f100]/60"
+              : "border-[#ae67c7]/60";
+            const dotColor = isCompleted ? "bg-[#b3f100]" : "bg-[#ae67c7]";
+            const progressColor = isCompleted ? "bg-[#b3f100]" : "bg-[#ae67c7]";
             const opacity = isFading ? "opacity-20" : "opacity-100";
+            const pulseClass = !isCompleted && !isFading ? "animate-pulse" : "";
 
             return (
               <div
                 key={verif.id}
-                className={`bg-white/5 rounded p-2 border ${borderColor} transition-all duration-1000 ${opacity}`}
+                className={`bg-white/5 rounded p-2 border ${borderColor} transition-all duration-1000 ${opacity} ${pulseClass}`}
               >
                 <div className="text-white text-xs font-medium truncate flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full ${dotColor}`}></div>

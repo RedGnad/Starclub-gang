@@ -231,10 +231,12 @@ export function useMissions(userAddress?: string) {
     return { giveCube: false, reason: 'already_completed' };
   }, [userAddress, missionsState.currentDate, updateMissionProgress]);
 
-  // Calculer les récompenses disponibles
+  // Calculer les récompenses disponibles (hors Daily Check-in qui est déjà récompensé automatiquement)
   const getAvailableRewards = useCallback(() => {
-    const completedMissions = missionsState.missions.filter(m => m.completed);
-    const totalRewards = completedMissions.length; // 1 cube par mission complétée
+    const completedMissions = missionsState.missions.filter((m: AnyMission | any) => {
+      return m.completed && (m as any).type !== 'daily_checkin';
+    });
+    const totalRewards = completedMissions.length; // 1 cube par mission complétée (hors daily_checkin)
     
     // Vérifier si les récompenses ont déjà été récupérées aujourd'hui
     const claimedKey = `rewards_claimed_${missionsState.currentDate}`;

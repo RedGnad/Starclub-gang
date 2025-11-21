@@ -227,10 +227,8 @@ function SplinePage() {
         .then((result) => {
           if (result.giveCube) {
             console.log(
-              "🎲 Toutes les missions quotidiennes complétées via cube mission !"
+              "🎲 Toutes les missions quotidiennes complétées via cube mission ! (Reward claimable)"
             );
-            // Attribuer réellement un cube supplémentaire
-            incrementCubes();
           }
         })
         .catch((err) => {
@@ -249,7 +247,7 @@ function SplinePage() {
         );
       }, 100);
     },
-    [processNextMission, markCubeCompleted, incrementCubes]
+    [processNextMission, markCubeCompleted]
   );
 
   // Debug SuperDApps loading
@@ -496,6 +494,39 @@ function SplinePage() {
     setTimeout(() => {
       document.dispatchEvent(keyupEvent);
       console.log("🎹 Y key up event dispatched");
+    }, 50); // 50ms de délai réaliste
+  };
+
+  // Fonction pour simuler un appui de touche 'z' (cycle complet keydown + keyup)
+  const simulateKeyZ = () => {
+    console.log("🎹 Simulating Z key press from HUB button");
+
+    // Créer les événements keydown et keyup
+    const keydownEvent = new KeyboardEvent("keydown", {
+      key: "z",
+      code: "KeyZ",
+      keyCode: 90,
+      which: 90,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    const keyupEvent = new KeyboardEvent("keyup", {
+      key: "z",
+      code: "KeyZ",
+      keyCode: 90,
+      which: 90,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    // Simuler le cycle complet keydown -> keyup
+    document.dispatchEvent(keydownEvent);
+
+    // Petit délai pour simuler un vrai appui de touche
+    setTimeout(() => {
+      document.dispatchEvent(keyupEvent);
+      console.log("🎹 Z key up event dispatched");
     }, 50); // 50ms de délai réaliste
   };
 
@@ -1294,6 +1325,34 @@ function SplinePage() {
         </div>
       )}
 
+      {/* Bouton HUB en haut à gauche */}
+      {mounted && isConnected && (
+        <div
+          style={{
+            position: "absolute",
+            top: "20px",
+            left: "20px",
+            zIndex: 1000,
+          }}
+        >
+          <button
+            onClick={simulateKeyZ}
+            style={{
+              background: "rgba(0,0,0,0.7)",
+              color: "#b3f100",
+              border: "2px solid #b3f100",
+              padding: "6px 12px",
+              borderRadius: "999px",
+              fontSize: "12px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            HUB
+          </button>
+        </div>
+      )}
+
       {/* LoginModal */}
       <LoginModal
         open={modalOpen}
@@ -1360,7 +1419,7 @@ function SplinePage() {
         missions={missions}
         completed={completed}
         streak={streak}
-        availableRewards={0}
+        availableRewards={getAvailableRewards().totalCubes}
         onClaimMissionRewards={claimRewards}
         onClose={() => {
           console.log(
