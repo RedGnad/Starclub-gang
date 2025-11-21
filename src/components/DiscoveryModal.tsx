@@ -150,12 +150,9 @@ export function DiscoveryModal({
         {/* Header */}
         <div className="relative p-6 border-b border-white/10 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-[#b3f100] mb-1">
+            <h2 className="text-2xl font-bold text-white mb-1">
               DISCOVERY ARCADE
             </h2>
-            <p className="text-[#ae67c7] text-sm">
-              Explore blockchain protocols and dApps
-            </p>
           </div>
           <div className="flex gap-3 items-center">
             {/* Loading indicator */}
@@ -170,11 +167,11 @@ export function DiscoveryModal({
             <button
               onClick={handleRefresh}
               disabled={backgroundLoading}
-              className="px-4 py-2 bg-[#f19300] hover:bg-[#ff9f1a] disabled:bg-[#f19300]/50 text-[#0D001D] border border-[#b3f100] rounded-lg font-medium transition-colors flex items-center gap-2"
-              title="Refresh protocols data"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              title="Fetch new dApps from GitHub"
             >
               {backgroundLoading ? (
-                <div className="w-4 h-4 border-2 border-[#0D001D] border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <svg
                   className="w-4 h-4"
@@ -225,7 +222,7 @@ export function DiscoveryModal({
             <div className="relative">
               <input
                 type="text"
-                placeholder="Rechercher une dApp..."
+                placeholder="Search for a dApp..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-2 pl-10 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent backdrop-blur-sm"
@@ -280,28 +277,27 @@ export function DiscoveryModal({
             <h3 className="text-lg font-semibold text-white">
               Protocols ({filteredDapps.length}/{dapps?.length || 0})
             </h3>
-            <div className="text-sm text-[#ae67c7]">
-              {filteredDapps.length > 0
-                ? "Live data available"
-                : "No data loaded"}
-            </div>
           </div>
 
           {loading && dapps.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-400 border-t-transparent mx-auto mb-4" />
-              <p>Loading protocols from database...</p>
-              <p className="text-sm mt-2">Fetching latest data</p>
+              <p>First loading from backend...</p>
+              <p className="text-sm mt-2">
+                GitHub + Google Sheets + Puppeteer scraper
+              </p>
             </div>
           ) : error ? (
             <div className="text-center py-12 text-red-500">
-              <p>❌ Loading error: {error}</p>
+              <p>❌ Backend error: {error}</p>
             </div>
           ) : dapps.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <div className="text-6xl mb-4">🌌</div>
               <p className="text-lg mb-2">No protocols loaded</p>
-              <p className="text-sm mb-4">Click "Sync" to load protocol data</p>
+              <p className="text-sm mb-4">
+                Click "Sync" to load the latest protocols
+              </p>
             </div>
           ) : filteredDapps.length === 0 ? (
             <div className="text-center py-12 text-gray-400">

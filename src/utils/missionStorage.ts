@@ -18,8 +18,8 @@ const generateDefaultMissions = (date: string): AnyMission[] => [
   {
     id: `discovery_arcade_${date}`,
     type: 'key_combo',
-    title: 'turn on Discovery Arcade',
-    description: 'Open the Discovery modal to explore dApps',
+    title: 'Turn on Discovery Arcade',
+    description: 'Open the Discovery Arcade modal',
     target: 1,
     current: 0,
     completed: false,
@@ -114,24 +114,15 @@ export class MissionStorage {
     const state = this.load();
     const missionIndex = state.missions.findIndex(m => m.id === missionId);
     
-    if (missionIndex === -1) {
-      console.warn(`❌ Mission ${missionId} not found`);
-      return state;
-    }
+    if (missionIndex === -1) return state;
 
     const updatedMission = updateFn(state.missions[missionIndex]);
     state.missions[missionIndex] = updatedMission;
 
-    // Vérifier si toutes les missions sont complétées RÉELLEMENT
-    const allCompleted = state.missions.every(m => m.completed);
-    console.log(`🎯 Mission progress check - All completed: ${allCompleted}`, {
-      missions: state.missions.map(m => ({ id: m.id, completed: m.completed, current: m.current, target: m.target }))
-    });
-    
-    state.completed = allCompleted;
-    if (allCompleted && !state.lastCompletedDate) {
+    // Vérifier si toutes les missions sont complétées
+    state.completed = state.missions.every(m => m.completed);
+    if (state.completed && !state.lastCompletedDate) {
       state.lastCompletedDate = state.currentDate;
-      console.log("🎉 All daily missions completed for the first time today!");
     }
 
     this.save(state);
@@ -147,30 +138,5 @@ export class MissionStorage {
       total,
       allCompleted: state.completed,
     };
-  }
-
-  // Méthode pour reset les missions (debug)
-  static resetMissions() {
-    console.log("🔄 Resetting all daily missions...");
-    localStorage.removeItem(STORAGE_KEY);
-    return this.load(); // Rechargera les missions par défaut
-  }
-
-  // Méthode pour debug l'état actuel
-  static debugState() {
-    const state = this.load();
-    console.log("📊 Current missions state:", {
-      date: state.currentDate,
-      completed: state.completed,
-      streak: state.streak,
-      missions: state.missions.map(m => ({
-        id: m.id,
-        title: m.title,
-        current: m.current,
-        target: m.target,
-        completed: m.completed
-      }))
-    });
-    return state;
   }
 }
