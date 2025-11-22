@@ -1194,7 +1194,7 @@ function SplinePage() {
     >
       {/* Spline plein écran */}
       <Spline
-        scene="https://prod.spline.design/eUR0ZkHlU2oliRLX/scene.splinecode"
+        scene="https://prod.spline.design/KY-GUgxv7iW6Fd92/scene.splinecode"
         onLoad={onLoad}
         renderOnDemand={false}
         style={{

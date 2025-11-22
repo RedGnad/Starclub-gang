@@ -99,6 +99,12 @@ The platform monitors interactions with verified contracts:
 - **Bean Exchange**: Spot trading platform
 - **OctoSwap**: Multi-chain DEX
 
+## Roadmap
+
+- **Monad mainnet SuperDApps**: Onboard production-grade SuperDApps deployed on the Monad mainnet, extending beyond the current testnet-focused registry.
+- **BlockVision as primary indexer**: Migrate interaction verification to BlockVision's Monad indexer as the primary data source, replacing direct Alchemy RPC calls once a paid BlockVision plan is enabled and validated.
+- **World specialization**: Specialize each of the three 3D worlds around a specific category of Monad mainnet dApps (e.g. DeFi, GameFi, infrastructure) to make discovery more structured.
+
 ## Development
 
 ### Build

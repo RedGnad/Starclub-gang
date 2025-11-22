@@ -96,9 +96,12 @@ export class UserInteractionsService {
     
     try {
       console.log(`🔍 Vérification des interactions pour ${userAddress}...`);
+      // Choisir la source de données primaire en fonction de la configuration
+      const useBlockVisionPrimary = process.env.USE_BLOCKVISION_PRIMARY === 'true';
 
-      // Utiliser la vraie vérification blockchain via RPC direct (qui fonctionne!)
-      const result = await this.getMonadExplorerInteractions(userAddress, dappId);
+      const result = useBlockVisionPrimary
+        ? await this.getRealBlockchainInteractions(userAddress, dappId)
+        : await this.getMonadExplorerInteractions(userAddress, dappId);
       
       const duration = Date.now() - startTime;
       console.log(`✅ Vérification terminée en ${duration}ms`);
@@ -128,11 +131,6 @@ export class UserInteractionsService {
   ): Promise<UserInteractionResult> {
     try {
       console.log('🌐 REAL BLOCKCHAIN: Using BlockVision API...');
-      
-      // Essayer l'API Monad Explorer directement (vraie blockchain)
-      console.log('🌐 BlockVision unavailable, trying Monad Explorer API...');
-      return await this.getMonadExplorerInteractions(userAddress, dappId);
-      
       const blockVision = getBlockVisionService();
       
       // Si un dappId spécifique est demandé, chercher ses contrats
@@ -218,25 +216,20 @@ export class UserInteractionsService {
 
       console.log(`✅ REAL BLOCKCHAIN: Found ${interactions.length} Super dApps with verified interactions`);
       console.log(`📊 Total transactions: ${result.transactionCount}, Contracts: ${result.contractsInteracted.length}`);
-
+      
       return {
         userAddress,
         totalDappsInteracted: interactions.length,
         interactions,
-        checkDuration: Date.now() - Date.now() // Approximation
+        checkDuration: 0 // sera surchargé par l'appelant
       };
-
+      
     } catch (error) {
       console.error('❌ REAL BLOCKCHAIN: BlockVision API failed:', error);
-      console.log('🔄 FALLBACK: Returning empty result (no more simulations)');
-      
-      // Retourner un résultat vide - plus de simulations
-      return {
-        userAddress,
-        totalDappsInteracted: 0,
-        interactions: [],
-        checkDuration: 0
-      };
+      console.log('🔄 FALLBACK: Trying Monad Explorer RPC instead...');
+
+      // Fallback propre sur la vérification via RPC direct
+      return await this.getMonadExplorerInteractions(userAddress, dappId);
     }
   }
 
