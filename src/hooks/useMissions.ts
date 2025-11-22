@@ -211,24 +211,38 @@ export function useMissions(userAddress?: string) {
     }
   }, [userAddress, loadMissions]);
 
-  // Marquer une mission cube comme complétée
+  // Mark the daily mission that tracks completing at least one cube mission (Cube Explorer)
   const markCubeCompleted = useCallback(async () => {
-    console.log("🎯 Marking cube mission as completed");
+    console.log("🎯 Marking Cube Explorer daily mission as completed");
     
     if (!userAddress) {
-      console.error('❌ Cannot mark cube completed without user address');
+      console.error('❌ Cannot mark cube completion without user address');
       return { giveCube: false, reason: 'no_address' };
     }
     
     const today = missionsState.currentDate;
-    const result = await updateMissionProgress(`cube_completions_${today}`, 1);
+    const result = await updateMissionProgress(`cube_explorer_${today}`, 1);
     
     if (result?.justCompleted) {
-      console.log("🎯 Cube Master completed! Awarding 1 cube");
-      return { giveCube: true, reason: 'cube_master' };
+      console.log("🎯 Cube Explorer daily mission completed (1 cube mission done)");
+      return { giveCube: false, reason: 'cube_explorer_completed' };
     }
     
     return { giveCube: false, reason: 'already_completed' };
+  }, [userAddress, missionsState.currentDate, updateMissionProgress]);
+
+  // Increment the Cube Master (30 cubes/day) mission based on cube limit increments
+  const incrementCubeMasterFromCubeLimit = useCallback(async () => {
+    console.log("📈 Incrementing Cube Master mission progress from cube limit event");
+
+    if (!userAddress) {
+      console.error('❌ Cannot increment Cube Master without user address');
+      return null;
+    }
+
+    const today = missionsState.currentDate;
+    const result = await updateMissionProgress(`cube_completions_${today}`, 1);
+    return result;
   }, [userAddress, missionsState.currentDate, updateMissionProgress]);
 
   // Calculer les récompenses disponibles (hors Daily Check-in qui est déjà récompensé automatiquement)
@@ -298,6 +312,7 @@ export function useMissions(userAddress?: string) {
     trackPosition,
     completeDailyCheckin,
     markCubeCompleted,
+    incrementCubeMasterFromCubeLimit,
     checkAllMissionsCompleted,
     getMissionStatus,
     getAvailableRewards,

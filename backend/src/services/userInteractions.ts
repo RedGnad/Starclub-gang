@@ -61,6 +61,10 @@ export class UserInteractionsService {
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   
   private usingRealData = false;
+  private methodFiltersByDappId: Record<string, string[]> = {
+    drake: [],
+    ambient: [],
+  };
 
   static getInstance(): UserInteractionsService {
     if (!this.instance) {
@@ -264,11 +268,22 @@ export class UserInteractionsService {
       console.log('🌐 Using RPC URL:', rpcUrl);
       console.log('🧪 Environment MONAD_RPC_URL:', process.env.MONAD_RPC_URL);
       
-      // Récupérer les transactions des dernières 24h via RPC
-      const transactions = await this.getMonadTransactionsRPC(userAddress, rpcUrl);
+      let transactions = await this.getMonadTransactionsRPC(userAddress, rpcUrl);
       
       if (!transactions || transactions.length === 0) {
         console.log('📭 No transactions found in last 24h');
+        return {
+          userAddress,
+          totalDappsInteracted: 0,
+          interactions: [],
+          checkDuration: 0
+        };
+      }
+
+      transactions = this.filterTransactionsByMethod(transactions, targetSuperDApps);
+
+      if (!transactions || transactions.length === 0) {
+        console.log('📭 No transactions matching method filters');
         return {
           userAddress,
           totalDappsInteracted: 0,
@@ -337,6 +352,53 @@ export class UserInteractionsService {
       console.error('❌ Monad Explorer API failed:', error);
       throw error;
     }
+  }
+
+  private filterTransactionsByMethod(
+    transactions: any[],
+    targetSuperDApps: SuperDApp[]
+  ): any[] {
+    if (!transactions || transactions.length === 0) {
+      return [];
+    }
+    const contractToDappId = new Map<string, string>();
+    for (const dapp of targetSuperDApps) {
+      const dappId = (dapp as any).id;
+      const normalizedContracts =
+        dapp.contracts?.map((c) => c.address.toLowerCase()) || [];
+      for (const address of normalizedContracts) {
+        contractToDappId.set(address, dappId);
+      }
+    }
+    const filtered: any[] = [];
+    for (const tx of transactions) {
+      const toAddress = tx.to?.toLowerCase();
+      if (!toAddress) {
+        continue;
+      }
+      const dappId = contractToDappId.get(toAddress);
+      if (!dappId) {
+        filtered.push(tx);
+        continue;
+      }
+      const allowedMethods = this.methodFiltersByDappId[dappId];
+      if (!allowedMethods || allowedMethods.length === 0) {
+        filtered.push(tx);
+        continue;
+      }
+      const input = (tx.input || '') as string;
+      if (!input || input.length < 10) {
+        continue;
+      }
+      const selector = input.slice(0, 10).toLowerCase();
+      const isAllowed = allowedMethods.some(
+        (method) => method.toLowerCase() === selector
+      );
+      if (isAllowed) {
+        filtered.push(tx);
+      }
+    }
+    return filtered;
   }
 
   /**

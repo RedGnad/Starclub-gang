@@ -27,12 +27,13 @@ router.get('/:address', async (req, res) => {
     
     const userId = (user as any[])[0].id;
     
-    // 3. Créer 4 missions directement en SQL (avec vérification d'existence)
+    // 3. Créer 5 missions directement en SQL (avec vérification d'existence)
     const missions = [
       { id: `check_in_${today}`, type: 'daily_checkin', title: 'Daily Check-in', desc: 'Connect and open the application', target: 1 },
       { id: `discovery_arcade_${today}`, type: 'discovery_arcade', title: 'Discovery Arcade', desc: 'Open the Discovery Arcade modal', target: 1 },
       { id: `cube_activations_${today}`, type: 'cube_activator', title: 'Cube Activator', desc: 'Open 3 cube mission modals', target: 3 },
-      { id: `cube_completions_${today}`, type: 'cube_master', title: 'Cube Master', desc: 'Complete all daily missions by opening cubes', target: 1 }
+      { id: `cube_explorer_${today}`, type: 'cube_explorer', title: 'Cube Explorer', desc: 'Complete 1 cube mission (earn 1 cube)', target: 1 },
+      { id: `cube_completions_${today}`, type: 'cube_master', title: 'Cube Master', desc: 'Collect 30 cubes today (fill the 0/30 gauge)', target: 30 }
     ];
     
     for (const mission of missions) {
@@ -43,11 +44,21 @@ router.get('/:address', async (req, res) => {
         LIMIT 1
       `;
       
-      // Créer seulement si elle n'existe pas
       if (!existing || (existing as any[]).length === 0) {
+        // Créer la mission si elle n'existe pas encore
         await prisma.$executeRaw`
           INSERT INTO daily_missions (id, "userId", date, "missionId", "missionType", title, description, target, progress, completed, "createdAt", "updatedAt")
           VALUES (${mission.id}, ${userId}, ${today}, ${mission.id}, ${mission.type}, ${mission.title}, ${mission.desc}, ${mission.target}, 0, false, NOW(), NOW())
+        `;
+      } else {
+        // Mettre à jour les métadonnées (titre, description, cible) pour refléter la configuration actuelle
+        await prisma.$executeRaw`
+          UPDATE daily_missions
+          SET title = ${mission.title},
+              description = ${mission.desc},
+              target = ${mission.target},
+              "updatedAt" = NOW()
+          WHERE "userId" = ${userId} AND date = ${today} AND "missionId" = ${mission.id}
         `;
       }
     }

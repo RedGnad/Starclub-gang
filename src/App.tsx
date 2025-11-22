@@ -64,6 +64,32 @@ function SplinePage() {
     loadCubes();
   }, [loadCubes]);
 
+  // Hooks pour les missions cube (nécessaire pour processNextMission)
+  const {
+    dapps: superDapps,
+    loading: dappsLoading,
+    error: dappsError,
+    refresh: refreshSuperDApps,
+  } = useSuperDApps();
+  const {
+    missions,
+    completed,
+    streak,
+    missionTriggered,
+    activeMission,
+    triggerCubeMission,
+    resetMission,
+    trackPosition,
+    trackDappClick,
+    trackKeyCombo,
+    completeDailyCheckin,
+    markCubeCompleted,
+    incrementCubeMasterFromCubeLimit,
+    checkAllMissionsCompleted,
+    getAvailableRewards,
+    claimRewards,
+  } = useMissions(address); // On passera l'adresse, le hook gère si elle est undefined
+
   // Fonction pour incrémenter les cubes
   const incrementCubes = React.useCallback(async () => {
     if (!address) {
@@ -81,6 +107,15 @@ function SplinePage() {
         const limitResponse = await CubeLimitAPI.incrementOpens(address);
         if (limitResponse.success) {
           (window as any).refreshCubeLimit?.();
+          // Reflect this cube in the Cube Master (30 cubes/day) daily mission
+          try {
+            await incrementCubeMasterFromCubeLimit();
+          } catch (missionError) {
+            console.error(
+              "Failed to increment Cube Master mission:",
+              missionError
+            );
+          }
         }
       } catch (limitError) {
         console.error("Failed to update cube limit status:", limitError);
@@ -88,7 +123,7 @@ function SplinePage() {
     } catch (error) {
       console.error("Failed to increment cubes:", error);
     }
-  }, [address]);
+  }, [address, incrementCubeMasterFromCubeLimit]);
 
   // État des vérifications en cours
   const [activeVerifications, setActiveVerifications] = React.useState<any[]>(
@@ -129,31 +164,6 @@ function SplinePage() {
   // Système de file d'attente pour les missions
   const [missionQueue, setMissionQueue] = React.useState<any[]>([]);
   const [currentMission, setCurrentMission] = React.useState<any>(null);
-
-  // Hooks pour les missions cube (nécessaire pour processNextMission)
-  const {
-    dapps: superDapps,
-    loading: dappsLoading,
-    error: dappsError,
-    refresh: refreshSuperDApps,
-  } = useSuperDApps();
-  const {
-    missions,
-    completed,
-    streak,
-    missionTriggered,
-    activeMission,
-    triggerCubeMission,
-    resetMission,
-    trackPosition,
-    trackDappClick,
-    trackKeyCombo,
-    completeDailyCheckin,
-    markCubeCompleted,
-    checkAllMissionsCompleted,
-    getAvailableRewards,
-    claimRewards,
-  } = useMissions(address); // On passera l'adresse, le hook gère si elle est undefined
 
   // Forcer un refresh des SuperDApps au montage pour avoir les nouvelles dApps
   React.useEffect(() => {
@@ -1483,6 +1493,15 @@ function SplinePage() {
                     .then((limitResponse) => {
                       if (limitResponse.success) {
                         (window as any).refreshCubeLimit?.();
+                        // Also reflect this cube in the Cube Master (30 cubes/day) daily mission
+                        incrementCubeMasterFromCubeLimit().catch(
+                          (missionError) => {
+                            console.error(
+                              "Failed to increment Cube Master mission after daily check-in:",
+                              missionError
+                            );
+                          }
+                        );
                       }
                     })
                     .catch((limitError) => {
@@ -1564,6 +1583,17 @@ function SplinePage() {
 
             {/* Spinner only - no progress bar */}
             <div className="w-16 h-16 border-4 border-[#ae67c7]/30 border-t-[#b3f100] rounded-full animate-spin mb-6 mx-auto"></div>
+
+            {/* Quick tips */}
+            <div className="max-w-md mx-auto text-xs md:text-sm text-white/80 space-y-1">
+              <p>
+                Use arrow keys to move. Press Space to jump and Shift to run.
+              </p>
+              <p>
+                Jump on glowing cubes to trigger cube missions and earn rewards.
+              </p>
+              <p>Complete your daily missions to gain extra cubes every day.</p>
+            </div>
           </div>
         </div>
       )}

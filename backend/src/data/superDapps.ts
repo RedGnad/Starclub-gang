@@ -64,13 +64,13 @@ export const SUPER_DAPPS: SuperDApp[] = [
   {
     id: 'pingu',
     name: 'Pingu Exchange',
-    description: 'Efficient swap platform for seamless token exchanges with optimized routing and low fees.',
+    description: 'Efficient limit order platform for placing orders with optimized routing and low fees.',
     category: 'DeFi::DEX',
-    action: 'swap',
+    action: 'place an order',
     website: 'https://pingu.exchange/',
     isSuper: true,
     contracts: [
-      { name: 'SwapContract', address: '0x3d7ec93875B6a6f0A5102fE29f887ee6E751b12F' }
+      { name: 'OrderBook', address: '0x3d7ec93875B6a6f0A5102fE29f887ee6E751b12F' }
     ]
   },
   {
@@ -119,6 +119,32 @@ export const SUPER_DAPPS: SuperDApp[] = [
     isSuper: true,
     contracts: [
       { name: 'ExecuteContract', address: '0x8B1fb7B1da49F111A2C0C11925D5bB86a2fab88E' }
+    ]
+  },
+  {
+    id: 'drake',
+    name: 'Drake Exchange',
+    description:
+      'Isolated margin exchange on Monad Testnet where users deposit USDC as collateral to trade.',
+    category: 'DeFi::DEX',
+    action: 'Deposit USDC to Isolated margin',
+    website: 'https://drake.exchange/',
+    twitter: 'https://x.com/DrakeExchange',
+    isSuper: true,
+    contracts: [
+      { name: 'IsolatedMargin', address: '0x27bB30Df8f60c639eA99a6BDe467eF86b28C02Ba' }
+    ]
+  },
+  {
+    id: 'ambient',
+    name: 'Ambient',
+    description: 'On-chain DEX enabling token swaps and liquidity provision on Monad Testnet.',
+    category: 'DeFi::DEX',
+    action: 'swap',
+    website: 'https://ambient.finance/',
+    isSuper: true,
+    contracts: [
+      { name: 'Router', address: '0x88B96aF200c8a9c35442C8AC6cd3D22695AaE4F0' }
     ]
   }
 ];

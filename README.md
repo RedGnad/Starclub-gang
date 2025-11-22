@@ -10,7 +10,7 @@ Starclub is a production-ready web3 app that gamifies decentralized application 
 - **Cube Mission System**: Gamified challenges requiring real blockchain interactions
 - **Real-time Verification**: Automated transaction monitoring and reward distribution
 - **Wallet Integration**: SIWE authentication with multi-wallet support
-- **Curated DApp Registry**: 7 verified SuperDApps across DeFi, GameFi, and infrastructure categories
+- **Curated DApp Registry**: 9 verified SuperDApps across DeFi, GameFi, and infrastructure categories
 
 ## Architecture
 
@@ -75,6 +75,7 @@ NODE_ENV=development
 DATABASE_URL=file:./dev.db
 BLOCKVISION_API_KEY=your_blockvision_key
 MONAD_RPC_URL=https://monad-testnet.g.alchemy.com/v2/YOUR_KEY
+USE_BLOCKVISION_PRIMARY=false
 ```
 
 ## API Endpoints
@@ -93,16 +94,18 @@ The platform monitors interactions with verified contracts:
 
 - **Kuru Exchange**: Multi-contract DEX platform
 - **Atlantis DEX**: Modular V4 exchange
-- **Pingu Exchange**: Optimized swap platform
+- **Pingu Exchange**: Optimized limit order platform
 - **Magma Staking**: High-yield staking protocol
 - **Monorail**: Advanced DEX with aggregated liquidity
 - **Bean Exchange**: Spot trading platform
 - **OctoSwap**: Multi-chain DEX
+- **Drake Exchange**: Isolated-margin DEX where users deposit USDC as collateral
+- **Ambient**: On-chain DEX for swaps and liquidity provision on Monad
 
 ## Roadmap
 
 - **Monad mainnet SuperDApps**: Onboard production-grade SuperDApps deployed on the Monad mainnet, extending beyond the current testnet-focused registry.
-- **BlockVision as primary indexer**: Migrate interaction verification to BlockVision's Monad indexer as the primary data source, replacing direct Alchemy RPC calls once a paid BlockVision plan is enabled and validated.
+- **BlockVision as primary indexer**: Migrate interaction verification to BlockVision's Monad indexer as the primary data source, replacing direct Alchemy RPC calls if ore infrastructure needed.
 - **World specialization**: Specialize each of the three 3D worlds around a specific category of Monad mainnet dApps (e.g. DeFi, GameFi, infrastructure) to make discovery more structured.
 
 ## Development

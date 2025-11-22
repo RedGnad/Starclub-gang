@@ -3,6 +3,7 @@
 
 import { getFollowersCount } from './twitterFollowersCache.js';
 import { cleanTwitterUrl } from './twitterScraper.js';
+import { SUPER_DAPPS } from '../data/superDapps.js';
 
 const GITHUB_PROTOCOLS_DIR_API =
   "https://api.github.com/repos/monad-crypto/protocols/contents/testnet?ref=main";
@@ -368,14 +369,34 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
 
     for (const protocol of githubProtocols) {
       const protocolName = protocol.name;
+      const normalizedNameForFilter = protocolName.toLowerCase().replace(/\s+/g, '');
+
+      if (normalizedNameForFilter === 'apriori') {
+        console.log("\u{1F6AB} Skipping aPriori protocol from discovery list");
+        continue;
+      }
+
       const enrichment = googleSheetsData[protocolName.toLowerCase()] || {};
 
       // Extract enriched data
-      const logoUrl = enrichment.LOGO || enrichment.logo || enrichment.logoUrl || null;
+      let logoUrl =
+        enrichment.LOGO || enrichment.logo || enrichment.logoUrl || null;
       const banner = enrichment.BANNER || enrichment.banner || null;
-      const rawTwitter = enrichment.twitter || enrichment.Twitter || enrichment.x || protocol.twitter || null;
+      const rawTwitter =
+        enrichment.twitter ||
+        enrichment.Twitter ||
+        enrichment.x ||
+        protocol.twitter ||
+        null;
       const twitter = rawTwitter ? cleanTwitterUrl(rawTwitter) : null;
-      const twitterFollowers = enrichment.followers ? parseInt(enrichment.followers) : null;
+      const twitterFollowers = enrichment.followers
+        ? parseInt(enrichment.followers)
+        : null;
+
+      // Generic logo fallback: use Twitter /photo when no explicit logo is provided
+      if (!logoUrl && twitter) {
+        logoUrl = `${twitter}/photo`;
+      }
 
       // Generate realistic metrics
       const metrics = generateMetrics(protocol, enrichment);
@@ -383,7 +404,11 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
       const dapp: DApp = {
         id: `dapp_${protocolName.toLowerCase().replace(/\s+/g, '_')}`,
         name: protocolName,
-        description: enrichment.INFO || enrichment.description || protocol.description || `${protocolName} protocol on Monad Testnet`,
+        description:
+          enrichment.INFO ||
+          enrichment.description ||
+          protocol.description ||
+          `${protocolName} protocol on Monad Testnet`,
         logoUrl,
         banner,
         symbol: null,
@@ -394,13 +419,98 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
         category: protocol.category,
         contractCount: protocol.contractCount || 1,
         ...metrics,
-        firstActivity: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000), // Random date within 90 days
-        lastActivity: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // Random date within 7 days
+        firstActivity: new Date(
+          Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000
+        ), // Random date within 90 days
+        lastActivity: new Date(
+          Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
+        ), // Random date within 7 days
         createdAt: new Date(),
         updatedAt: new Date(),
       };
 
+      const normalizedName = protocolName.toLowerCase();
+
+      const matchingSuperDapp = SUPER_DAPPS.find(
+        (sd) => sd.name.toLowerCase() === normalizedName
+      );
+      if (
+        matchingSuperDapp &&
+        dapp.description &&
+        dapp.description.trim().length < 10
+      ) {
+        dapp.description = matchingSuperDapp.description;
+      }
+
+      if (normalizedName === 'curvance') {
+        dapp.website = 'https://www.curvance.com/';
+      }
+
+      if (normalizedName === 'lfj') {
+        dapp.website = 'https://lfj.gg/';
+      }
+
+      // Specific fix: La Mouch is an NFT project, not DeFi
+      if (normalizedName === 'la mouch' || normalizedName === 'la_mouch') {
+        dapp.category = 'NFT';
+
+        // Ensure La Mouch has a logo – if we have a Twitter handle, force /photo as logo
+        if (!dapp.logoUrl && dapp.twitter) {
+          dapp.logoUrl = `${dapp.twitter}/photo`;
+        }
+      }
+
       dapps.push(dapp);
+    }
+
+    const hasDrake = dapps.some(
+      (dapp) => dapp.name.toLowerCase() === 'drake exchange'
+    );
+
+    if (!hasDrake) {
+      const drakeSuper = SUPER_DAPPS.find((sd) => sd.id === 'drake');
+
+      if (drakeSuper) {
+        const twitter = drakeSuper.twitter
+          ? cleanTwitterUrl(drakeSuper.twitter)
+          : null;
+        const logoUrl = twitter ? `${twitter}/photo` : null;
+
+        const normalizedCategory = mapCategory(drakeSuper.category);
+        const metrics = generateMetrics(
+          {
+            category: normalizedCategory,
+            contractCount: drakeSuper.contracts.length,
+          } as any,
+          {}
+        );
+
+        const drakeDapp: DApp = {
+          id: `dapp_${drakeSuper.name.toLowerCase().replace(/\s+/g, '_')}`,
+          name: drakeSuper.name,
+          description: drakeSuper.description,
+          logoUrl,
+          banner: null,
+          symbol: null,
+          website: drakeSuper.website || null,
+          github: drakeSuper.github || null,
+          twitter,
+          twitterFollowers: null,
+          category: normalizedCategory,
+          contractCount: drakeSuper.contracts.length,
+          ...metrics,
+          firstActivity: new Date(
+            Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000
+          ),
+          lastActivity: new Date(
+            Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000
+          ),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        dapps.push(drakeDapp);
+      }
     }
 
     // Pas d'affichage des followers pour éviter les données incorrectes
