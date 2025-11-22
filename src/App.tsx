@@ -843,6 +843,45 @@ function SplinePage() {
     checkAuthentication();
   }, [isConnected, address]);
 
+  // Loading tips rotation (3 messages, fade in/out pendant le chargement Spline)
+  const tips = React.useMemo(
+    () => [
+      "Use arrow keys to move. Press Space to jump and Shift to run.",
+      "Jump on glowing cubes to trigger cube missions and earn rewards.",
+      "Complete your daily missions to gain extra cubes every day.",
+    ],
+    []
+  );
+  const [activeTipIndex, setActiveTipIndex] = React.useState(0);
+  const [tipVisible, setTipVisible] = React.useState(true);
+
+  React.useEffect(() => {
+    // Ne lancer l’animation que tant que Spline n’est pas chargé
+    if (splineLoaded) {
+      return;
+    }
+
+    let fadeTimeoutId: number | undefined;
+
+    const intervalId = window.setInterval(() => {
+      // Phase fade-out
+      setTipVisible(false);
+
+      // Après la durée du fade-out, changer de tip et refaire fade-in
+      fadeTimeoutId = window.setTimeout(() => {
+        setActiveTipIndex((prev) => (prev + 1) % tips.length);
+        setTipVisible(true);
+      }, 300); // durée du fade-out en ms
+    }, 2000); // 2 secondes par tip (incluant le fade)
+
+    return () => {
+      window.clearInterval(intervalId);
+      if (fadeTimeoutId !== undefined) {
+        window.clearTimeout(fadeTimeoutId);
+      }
+    };
+  }, [splineLoaded]);
+
   function onLoad(app: Application) {
     console.log("🎮 Spline loaded");
     splineAppRef.current = app;
@@ -1584,15 +1623,19 @@ function SplinePage() {
             {/* Spinner only - no progress bar */}
             <div className="w-16 h-16 border-4 border-[#ae67c7]/30 border-t-[#b3f100] rounded-full animate-spin mb-6 mx-auto"></div>
 
-            {/* Quick tips */}
+            {/* Quick tips - 1 message à la fois avec fade */}
             <div className="max-w-md mx-auto text-xs md:text-sm text-white/80 space-y-1">
-              <p>
-                Use arrow keys to move. Press Space to jump and Shift to run.
+              <p className="uppercase tracking-wide text-[#b3f100]/80 mb-1">
+                Quick tip
               </p>
-              <p>
-                Jump on glowing cubes to trigger cube missions and earn rewards.
+              <p
+                style={{
+                  opacity: tipVisible ? 1 : 0,
+                  transition: "opacity 0.4s ease-in-out",
+                }}
+              >
+                {tips[activeTipIndex]}
               </p>
-              <p>Complete your daily missions to gain extra cubes every day.</p>
             </div>
           </div>
         </div>
