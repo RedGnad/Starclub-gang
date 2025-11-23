@@ -393,9 +393,12 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
         ? parseInt(enrichment.followers)
         : null;
 
-      // Generic logo fallback: use Twitter /photo when no explicit logo is provided
+      // Generic logo fallback: use unavatar.io on top of Twitter handle when no explicit logo is provided
       if (!logoUrl && twitter) {
-        logoUrl = `${twitter}/photo`;
+        const handle = twitter.split('/').pop();
+        if (handle) {
+          logoUrl = `https://unavatar.io/twitter/${handle}`;
+        }
       }
 
       // Generate realistic metrics
@@ -454,9 +457,12 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
       if (normalizedName === 'la mouch' || normalizedName === 'la_mouch') {
         dapp.category = 'NFT';
 
-        // Ensure La Mouch has a logo – if we have a Twitter handle, force /photo as logo
+        // Ensure La Mouch has a logo – if we have a Twitter handle, generate from unavatar.io
         if (!dapp.logoUrl && dapp.twitter) {
-          dapp.logoUrl = `${dapp.twitter}/photo`;
+          const handle = dapp.twitter.split('/').pop();
+          if (handle) {
+            dapp.logoUrl = `https://unavatar.io/twitter/${handle}`;
+          }
         }
       }
 
@@ -474,7 +480,14 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
         const twitter = drakeSuper.twitter
           ? cleanTwitterUrl(drakeSuper.twitter)
           : null;
-        const logoUrl = twitter ? `${twitter}/photo` : null;
+
+        let logoUrl: string | null = null;
+        if (twitter) {
+          const handle = twitter.split('/').pop();
+          if (handle) {
+            logoUrl = `https://unavatar.io/twitter/${handle}`;
+          }
+        }
 
         const normalizedCategory = mapCategory(drakeSuper.category);
         const metrics = generateMetrics(
