@@ -29,10 +29,10 @@ router.get('/:address', async (req, res) => {
     
     // 3. Créer 5 missions directement en SQL (avec vérification d'existence)
     const missions = [
-      { id: `check_in_${today}`, type: 'daily_checkin', title: 'Daily Check-in', desc: 'Connect and open the application', target: 1 },
-      { id: `discovery_arcade_${today}`, type: 'discovery_arcade', title: 'Discovery Arcade', desc: 'Open the Discovery Arcade modal', target: 1 },
-      { id: `cube_activations_${today}`, type: 'cube_activator', title: 'Cube Activator', desc: 'Open 3 cube mission modals', target: 3 },
-      { id: `cube_explorer_${today}`, type: 'cube_explorer', title: 'Cube Explorer', desc: 'Complete 1 cube mission (earn 1 cube)', target: 1 },
+      { id: `check_in_${today}`, type: 'daily_checkin', title: 'Daily Check-in', desc: 'Complete check-in', target: 1 },
+      { id: `discovery_arcade_${today}`, type: 'discovery_arcade', title: 'Discovery Arcade', desc: 'Open the Discovery Arcade', target: 1 },
+      { id: `cube_activations_${today}`, type: 'cube_activator', title: 'Cube Activator', desc: 'Open 3 cubes', target: 3 },
+      { id: `cube_explorer_${today}`, type: 'cube_explorer', title: 'Cube Explorer', desc: 'Complete 1 cube mission', target: 1 },
       { id: `cube_completions_${today}`, type: 'cube_master', title: 'Cube Master', desc: 'Collect 30 cubes today (fill the 0/30 gauge)', target: 30 }
     ];
     
@@ -202,7 +202,7 @@ router.post('/:address/daily-checkin', async (req, res) => {
         // Créer la mission si elle n'existe pas encore
         await tx.$executeRaw`
           INSERT INTO daily_missions (id, "userId", date, "missionId", "missionType", title, description, target, progress, completed, "createdAt", "updatedAt")
-          VALUES (${missionId}, ${userId}, ${today}, ${missionId}, 'daily_checkin', 'Daily Check-in', 'Connect and open the application', 1, 1, true, NOW(), NOW())
+          VALUES (${missionId}, ${userId}, ${today}, ${missionId}, 'daily_checkin', 'Daily Check-in', 'Complete check-in', 1, 1, true, NOW(), NOW())
         `;
       } else {
         // Mettre à jour la mission existante
