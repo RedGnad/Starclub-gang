@@ -456,14 +456,15 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
       // Specific fix: La Mouch is an NFT project, not DeFi
       if (normalizedName === 'la mouch' || normalizedName === 'la_mouch') {
         dapp.category = 'NFT';
+        dapp.website = 'https://checker.lamouch.xyz/';
+        dapp.twitter = 'https://x.com/LaMouchNFT';
+        dapp.logoUrl =
+          'https://green-adjacent-sheep-82.mypinata.cloud/ipfs/bafkreifqnthnouhgl43hcvg2o6kajer4qazxesqrrbqlv347swzdyecn4y';
+      }
 
-        // Ensure La Mouch has a logo – if we have a Twitter handle, generate from unavatar.io
-        if (!dapp.logoUrl && dapp.twitter) {
-          const handle = dapp.twitter.split('/').pop();
-          if (handle) {
-            dapp.logoUrl = `https://unavatar.io/twitter/${handle}`;
-          }
-        }
+      if (normalizedName === 'drake exchange' || normalizedName === 'drake_exchange') {
+        dapp.logoUrl =
+          'https://green-adjacent-sheep-82.mypinata.cloud/ipfs/bafkreiappjn3irrqknslgz75ven67ovnbbhjtveyhnqvgrev4xafcrcr2e';
       }
 
       dapps.push(dapp);
@@ -481,13 +482,8 @@ export async function syncDApps(progressCallback?: (current: number, total: numb
           ? cleanTwitterUrl(drakeSuper.twitter)
           : null;
 
-        let logoUrl: string | null = null;
-        if (twitter) {
-          const handle = twitter.split('/').pop();
-          if (handle) {
-            logoUrl = `https://unavatar.io/twitter/${handle}`;
-          }
-        }
+        const logoUrl: string | null =
+          'https://green-adjacent-sheep-82.mypinata.cloud/ipfs/bafkreiappjn3irrqknslgz75ven67ovnbbhjtveyhnqvgrev4xafcrcr2e';
 
         const normalizedCategory = mapCategory(drakeSuper.category);
         const metrics = generateMetrics(
