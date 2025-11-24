@@ -34,7 +34,7 @@ Starclub is a production-ready web3 app that gamifies decentralized application 
 
 ## Deployment
 
-- **Frontend**: [starclub-rho.vercel.app](https://starclub-rho.vercel.app)
+- **Frontend**: [starclub-rho.vercel.app](https://starclub-gang.vercel.app)
 - **Backend**: [starclub-backend.onrender.com](https://starclub-backend.onrender.com)
 
 ## Installation
